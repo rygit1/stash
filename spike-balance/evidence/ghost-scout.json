@@ -1,0 +1,206 @@
+{
+  "starbucks": {
+    "_error": "exit 1",
+    "startUrl": "https://www.starbucks.com/gift",
+    "verdict": "UNREACHED (our blank)"
+  },
+  "panera": {
+    "url": "https://www.panerabread.com/en-us/gift-cards/balance.html",
+    "title": "Check Your Gift Card Balance | Panera Bread",
+    "consent": [],
+    "inputs": [],
+    "balanceLinks": [
+      {
+        "text": "Check Your Balance",
+        "href": "https://www.panerabread.com/en-us/gift-cards/balance.html",
+        "tag": "a"
+      },
+      {
+        "text": "Check Balance",
+        "href": "https://panerabread.wgiftcard.com/rbc/panerabread?utm_medium=brand-site&utm_source=adhoc&utm_campaign=giftcard-balance-page&utm_content=gift-card",
+        "tag": "a"
+      }
+    ],
+    "botGuard": false,
+    "vendorScript": true,
+    "captcha": true,
+    "body": "We use first and third-party cookies and other technologies to provide you with the best experience including to enable site functionality, analytics, personalization and targeted advertising. Select Do Not Sell or Share My Personal Information at the bottom of our page to learn how to opt out of ta",
+    "startUrl": "https://www.panerabread.com/en-us/gift-cards/balance.html",
+    "verdict": "BALANCE LINK FOUND (follow it)"
+  },
+  "walmart": {
+    "url": "https://www.walmart.com/cp/gift-cards/1094765",
+    "title": "Gift Registry | Walmart.com",
+    "consent": [],
+    "inputs": [
+      {
+        "n": "q",
+        "id": "",
+        "ph": "Search everything at Walmart online and in store",
+        "t": "search",
+        "al": "Search"
+      },
+      {
+        "n": "firstName",
+        "id": "react-aria5434825437-:r3:",
+        "ph": "",
+        "t": "text",
+        "al": null
+      },
+      {
+        "n": "lastName",
+        "id": "react-aria5434825437-:r6:",
+        "ph": "",
+        "t": "text",
+        "al": null
+      }
+    ],
+    "balanceLinks": [],
+    "botGuard": false,
+    "vendorScript": true,
+    "captcha": false,
+    "body": "Skip to Main Content Pickup or delivery? Santa Monica, 90402 \u2022 Hawthorne Neighborhood Market Santa Monica, 90402 \u2022 Hawthorne Neighborhood Market Reorder My Items Sign In Account Spanish / Espa\u00f1ol now available! Spanish / Espa\u00f1ol now available! 0 $0.00 Departments Services Rollbacks & More Back to Sc",
+    "startUrl": "https://www.walmart.com/cp/gift-cards/1094765",
+    "verdict": "no form, no link on this page"
+  },
+  "nordstrom": {
+    "url": "https://www.nordstrom.com/browse/gifts",
+    "title": "Gift Ideas | Nordstrom",
+    "consent": [],
+    "inputs": [
+      {
+        "n": "keyword",
+        "id": "keyword-search-input",
+        "ph": "Search for products or brands",
+        "t": "search",
+        "al": null
+      },
+      {
+        "n": "email-module-input",
+        "id": "",
+        "ph": "Email Address",
+        "t": "text",
+        "al": null
+      }
+    ],
+    "balanceLinks": [
+      {
+        "text": "New Balance 327 Sneaker",
+        "href": "/s/327-sneaker-women/7952976?origin=category-personalizedsort&breadcrumb=Home%2FGifts&color=444444RSFC",
+        "tag": "a"
+      }
+    ],
+    "botGuard": false,
+    "vendorScript": false,
+    "captcha": false,
+    "body": "Skip navigation We're celebrating 125 years! Celebrate with Us Search Clear Clear Search Text Shop with AI BETA Sign In Local Brentwood | 90402 0 New & Now Women Men Beauty Shoes Accessories Kids Designer Home Gifts Sale Services Main content HomeGifts Gifts for Her Gifts for Him For Kids & Babies F",
+    "startUrl": "https://www.nordstrom.com/c/gift-cards",
+    "verdict": "BALANCE LINK FOUND (follow it)"
+  },
+  "gap": {
+    "url": "https://www.gap.com/PageNotFound.do",
+    "title": "Gap",
+    "consent": [
+      "Close"
+    ],
+    "inputs": [
+      {
+        "n": "",
+        "id": "search-input",
+        "ph": "Search Gap",
+        "t": "text",
+        "al": "Search"
+      },
+      {
+        "n": "prefooter-slot-email-text-input",
+        "id": "",
+        "ph": "Enter your email address",
+        "t": "email",
+        "al": null
+      }
+    ],
+    "balanceLinks": [],
+    "botGuard": false,
+    "vendorScript": true,
+    "captcha": false,
+    "body": "SKIP TO TOP NAVIGATION SKIP TO SHOPPING BAG SKIP TO FOOTER LINKS Gap Gap Factory Old Navy Banana Republic Athleta Up to 50% off Select styles. Details 50% off tees Select styles. Details Extra 25% off your first purchase with your new Encore Credit Card. Ends 8/27. Apply now Details Women Men Girls ",
+    "startUrl": "https://www.gap.com/customerService/info.do?cid=81364",
+    "verdict": "no form, no link on this page"
+  },
+  "ulta": {
+    "url": "https://www.ulta.com/guest/giftcard-balance",
+    "title": "ULTA.com :: Our Apologies",
+    "consent": [],
+    "inputs": [],
+    "balanceLinks": [],
+    "botGuard": false,
+    "vendorScript": true,
+    "captcha": false,
+    "body": "Be Right Back ",
+    "startUrl": "https://www.ulta.com/guest/giftcard-balance",
+    "verdict": "WRONG URL (page not found / error) -- our blank, not their wall"
+  },
+  "homedepot": {
+    "url": "https://www.homedepot.com/auth/view/signin?redirect=/gift-cards/balance/",
+    "title": "The Home Depot: sign in, create or secure your account",
+    "consent": [],
+    "inputs": [
+      {
+        "n": "username",
+        "id": "username",
+        "ph": "Enter your email address",
+        "t": "text",
+        "al": null
+      },
+      {
+        "n": "",
+        "id": "",
+        "ph": "",
+        "t": "text",
+        "al": null
+      },
+      {
+        "n": "",
+        "id": "",
+        "ph": "",
+        "t": "text",
+        "al": null
+      }
+    ],
+    "balanceLinks": [],
+    "botGuard": false,
+    "vendorScript": true,
+    "captcha": false,
+    "body": "Check Your Gift Card Balance Enter your email to sign in or create an account. Email Address Continue With an account at The Home Depot, you can Reload Your Gift Card Get Up to $20 Off Your First Purchase Enjoy Fast Checkout Receive Exclusive Offers Track Your Orders ;",
+    "startUrl": "https://www.homedepot.com/gift-cards/balance",
+    "verdict": "FORM PRESENT"
+  },
+  "target": {
+    "url": "https://www.target.com/login?client_id=ecom-web-1.0.0&ui_namespace=ui-default&back_button_action=browser&keep_me_signed_in=true&kmsi_default=false&actions=create_session_request_username&signin_amr=true",
+    "title": "Login: Target",
+    "consent": [],
+    "inputs": [
+      {
+        "n": "username",
+        "id": "username",
+        "ph": " ",
+        "t": "text",
+        "al": null
+      },
+      {
+        "n": "keepMeSignedIn",
+        "id": "keepMeSignedIn",
+        "ph": "",
+        "t": "checkbox",
+        "al": null
+      }
+    ],
+    "balanceLinks": [],
+    "botGuard": false,
+    "vendorScript": true,
+    "captcha": false,
+    "body": "Sign in or create account By continuing, you agree to Target's terms and privacy policy Email or mobile phone Continue or Sign in with passkey What's a passkey? Keep me signed in Footer *See details. Restrictions and terms apply. Pricing, promotions, and availability may vary by location and at Targ",
+    "startUrl": "https://www.target.com/guest/gift-card-balance",
+    "verdict": "LOGIN-GATED"
+  }
+}

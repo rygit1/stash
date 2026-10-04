@@ -1,0 +1,34 @@
+[
+  {
+    "merchant": "wgc_dunkin",
+    "name": "Dunkin (wgiftcard)",
+    "url": "https://dunkin.wgiftcard.com/",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": true,
+      "types": [
+        "reCAPTCHA",
+        "hCaptcha"
+      ],
+      "blocking": true
+    },
+    "loginWall": false,
+    "form": null,
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "captcha-walled",
+    "screenshots": [
+      "wgc_dunkin-1-loaded.png",
+      "wgc_dunkin-captcha.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "captcha wall: reCAPTCHA, hCaptcha"
+    ],
+    "measured": true
+  }
+]

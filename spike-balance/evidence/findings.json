@@ -1,0 +1,129 @@
+[
+  {
+    "merchant": "target",
+    "name": "Target",
+    "url": "https://www.target.com/guest/gift-card-balance",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": true,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": true,
+      "submitText": "Continue",
+      "submitDisabled": false,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 2
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "login-gated",
+    "screenshots": [
+      "target-1-loaded.png",
+      "target-loginwall.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "page presents account sign-in / create-account, not a public card+PIN balance form"
+    ]
+  },
+  {
+    "merchant": "nike",
+    "name": "Nike",
+    "url": "https://www.nike.com/orders/gift-card-lookup",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": true,
+      "cardMeta": "giftcardnumber giftcardnumber on gift card number*",
+      "pinFound": true,
+      "pinMeta": "giftcardpin giftcardpin on pin*",
+      "submitFound": true,
+      "submitText": "Check Balance",
+      "submitDisabled": true,
+      "scopedToForm": true,
+      "passwordField": false,
+      "visibleInputs": 3
+    },
+    "submitted": true,
+    "result": {
+      "errs": [],
+      "alerts": [],
+      "url": "https://www.nike.com/orders/gift-card-lookup",
+      "title": "Check Your Nike Gift Card Balance. Nike.com"
+    },
+    "formDrivable": false,
+    "verdict": "submitted-no-clear-response",
+    "screenshots": [
+      "nike-1-loaded.png",
+      "nike-2-filled.png",
+      "nike-3-result.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "card: value=\"6224990000000000\"",
+      "pin: value=\"\"",
+      "submit after fill: disabled=true text=\"Check Balance\"",
+      "submit disabled after fill — attempting native Enter submit once",
+      "submit fired but no obvious error/result captured — inspect 3-result screenshot"
+    ]
+  },
+  {
+    "merchant": "starbucks",
+    "name": "Starbucks",
+    "url": "https://www.starbucks.com/card/balance",
+    "httpStatus": 404,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": false,
+      "submitText": null,
+      "submitDisabled": null,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 0
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "not-drivable",
+    "screenshots": [
+      "starbucks-1-loaded.png",
+      "starbucks-no-form.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "could not locate a card-number field (visibleInputs=0, http=404)"
+    ]
+  }
+]

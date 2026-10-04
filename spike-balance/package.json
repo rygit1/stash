@@ -1,0 +1,14 @@
+{
+  "name": "spike-balance",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Feasibility spike (isolated): can a browser-automation agent drive merchant gift-card balance pages? Dummy data only, no CAPTCHA evasion.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "spike": "node check-balance.mjs"
+  },
+  "dependencies": {
+    "puppeteer": "^25.1.0"
+  }
+}

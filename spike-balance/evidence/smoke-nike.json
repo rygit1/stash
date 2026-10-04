@@ -1,0 +1,54 @@
+[
+  {
+    "merchant": "nike",
+    "name": "Nike",
+    "url": "https://www.nike.com/orders/gift-card-lookup",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": true,
+      "cardMeta": "giftcardnumber giftcardnumber on gift card number*",
+      "pinFound": true,
+      "pinMeta": "giftcardpin giftcardpin on pin*",
+      "submitFound": true,
+      "submitText": "Check Balance",
+      "submitDisabled": true,
+      "scopedToForm": true,
+      "passwordField": false,
+      "visibleInputs": 3
+    },
+    "submitted": true,
+    "result": {
+      "errs": [
+        "We couldn't find a gift card with those numbers. Please check the gift card number and PIN, and try again."
+      ],
+      "alerts": [],
+      "url": "https://www.nike.com/orders/gift-card-lookup",
+      "title": "Check Your Nike Gift Card Balance. Nike.com"
+    },
+    "formDrivable": true,
+    "verdict": "drivable",
+    "screenshots": [
+      "nike-1-loaded.png",
+      "nike-2-filled.png",
+      "nike-3-result.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "card: value=\"6224990000000000000\"",
+      "pin: value=\"123456\"",
+      "submit after fill: disabled=false text=\"Check Balance\"",
+      "post-submit settle: page answered"
+    ],
+    "answered": true,
+    "measured": true
+  }
+]

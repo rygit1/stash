@@ -1,0 +1,34 @@
+[
+  {
+    "merchant": "wgc_lowes",
+    "name": "Lowe's (wgiftcard)",
+    "url": "https://lowes.wgiftcard.com/",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": true,
+      "types": [
+        "reCAPTCHA",
+        "hCaptcha"
+      ],
+      "blocking": true
+    },
+    "loginWall": false,
+    "form": null,
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "captcha-walled",
+    "screenshots": [
+      "wgc_lowes-1-loaded.png",
+      "wgc_lowes-captcha.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "captcha wall: reCAPTCHA, hCaptcha"
+    ],
+    "measured": true
+  }
+]

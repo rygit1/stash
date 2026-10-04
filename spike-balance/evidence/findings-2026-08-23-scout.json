@@ -1,0 +1,551 @@
+[
+  {
+    "merchant": "target",
+    "name": "Target",
+    "url": "https://www.target.com/guest/gift-card-balance",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": true,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": true,
+      "submitText": "Continue",
+      "submitDisabled": false,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 2
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "login-gated",
+    "screenshots": [
+      "target-1-loaded.png",
+      "target-loginwall.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "page presents account sign-in / create-account, not a public card+PIN balance form"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "nike",
+    "name": "Nike",
+    "url": "https://www.nike.com/orders/gift-card-lookup",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": true,
+      "cardMeta": "giftcardnumber giftcardnumber on gift card number*",
+      "pinFound": true,
+      "pinMeta": "giftcardpin giftcardpin on pin*",
+      "submitFound": true,
+      "submitText": "Check Balance",
+      "submitDisabled": true,
+      "scopedToForm": true,
+      "passwordField": false,
+      "visibleInputs": 3
+    },
+    "submitted": true,
+    "result": {
+      "errs": [
+        "We couldn't find a gift card with those numbers. Please check the gift card number and PIN, and try again."
+      ],
+      "alerts": [],
+      "url": "https://www.nike.com/orders/gift-card-lookup",
+      "title": "Check Your Nike Gift Card Balance. Nike.com"
+    },
+    "formDrivable": true,
+    "verdict": "drivable",
+    "screenshots": [
+      "nike-1-loaded.png",
+      "nike-2-filled.png",
+      "nike-3-result.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "card: value=\"6224990000000000000\"",
+      "pin: value=\"123456\"",
+      "submit after fill: disabled=false text=\"Check Balance\"",
+      "post-submit settle: page answered"
+    ],
+    "answered": true,
+    "measured": true
+  },
+  {
+    "merchant": "starbucks",
+    "name": "Starbucks",
+    "url": "https://www.starbucks.com/gift",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": true,
+      "submitText": "Check balance",
+      "submitDisabled": false,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 0
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "not-drivable",
+    "screenshots": [
+      "starbucks-1-loaded.png",
+      "starbucks-no-form.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "could not locate a card-number field (visibleInputs=0, http=200)"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "walmart",
+    "name": "Walmart",
+    "url": "https://www.walmart.com/cp/gift-cards/1094765",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": true,
+      "submitText": "I am purchasing items in-store, how do I",
+      "submitDisabled": false,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 3
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "not-drivable",
+    "screenshots": [
+      "walmart-1-loaded.png",
+      "walmart-no-form.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "could not locate a card-number field (visibleInputs=3, http=200)"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "ulta",
+    "name": "Ulta Beauty",
+    "url": "https://www.ulta.com/guest/giftcard-balance",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": false,
+      "submitText": null,
+      "submitDisabled": null,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 0
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "not-drivable",
+    "screenshots": [
+      "ulta-1-loaded.png",
+      "ulta-no-form.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "could not locate a card-number field (visibleInputs=0, http=200)"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "nordstrom",
+    "name": "Nordstrom",
+    "url": "https://www.nordstrom.com/c/gift-card-balance",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": false,
+      "submitText": null,
+      "submitDisabled": null,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 2
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "not-drivable",
+    "screenshots": [
+      "nordstrom-1-loaded.png",
+      "nordstrom-no-form.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "could not locate a card-number field (visibleInputs=2, http=200)"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "vanilla",
+    "name": "Vanilla Visa (prepaid)",
+    "url": "https://www.vanillagift.com/check-balance",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": true,
+      "types": [
+        "reCAPTCHA",
+        "hCaptcha"
+      ],
+      "blocking": true
+    },
+    "loginWall": false,
+    "form": null,
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "captcha-walled",
+    "screenshots": [
+      "vanilla-1-loaded.png",
+      "vanilla-captcha.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "captcha wall: reCAPTCHA, hCaptcha"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "chipotle",
+    "name": "Chipotle",
+    "url": "https://www.chipotle.com/gift-cards",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": false,
+      "submitText": null,
+      "submitDisabled": null,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 0
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "not-drivable",
+    "screenshots": [
+      "chipotle-1-loaded.png",
+      "chipotle-no-form.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "could not locate a card-number field (visibleInputs=0, http=200)"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "gap",
+    "name": "Gap / Old Navy",
+    "url": "https://www.gap.com/customerService/info.do?cid=81364",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": true,
+      "submitText": "Submit",
+      "submitDisabled": false,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 2
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "not-drivable",
+    "screenshots": [
+      "gap-1-loaded.png",
+      "gap-no-form.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "could not locate a card-number field (visibleInputs=2, http=200)"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "amazon",
+    "name": "Amazon",
+    "url": "https://www.amazon.com/gc/balance",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": true,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": true,
+      "submitText": "",
+      "submitDisabled": false,
+      "scopedToForm": false,
+      "passwordField": true,
+      "visibleInputs": 2
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "login-gated",
+    "screenshots": [
+      "amazon-1-loaded.png",
+      "amazon-loginwall.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "page presents account sign-in / create-account, not a public card+PIN balance form"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "homedepot",
+    "name": "Home Depot",
+    "url": "https://www.homedepot.com/mycheckout/giftcard",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": false,
+      "submitText": null,
+      "submitDisabled": null,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 0
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "not-drivable",
+    "screenshots": [
+      "homedepot-1-loaded.png",
+      "homedepot-no-form.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "could not locate a card-number field (visibleInputs=0, http=200)"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "lowes",
+    "name": "Lowe's",
+    "url": "https://www.lowes.com/l/gift-card-balance.html",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [
+      "Akamai"
+    ],
+    "captcha": {
+      "present": false,
+      "types": [],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": null,
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "bot-blocked",
+    "screenshots": [
+      "lowes-1-loaded.png",
+      "lowes-blocked.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "block: status=200 signals=Akamai"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "doordash",
+    "name": "DoorDash",
+    "url": "https://www.doordash.com/gift-cards/",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": true,
+      "types": [
+        "reCAPTCHA",
+        "Cloudflare Turnstile"
+      ],
+      "blocking": true
+    },
+    "loginWall": false,
+    "form": null,
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "captcha-walled",
+    "screenshots": [
+      "doordash-1-loaded.png",
+      "doordash-captcha.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "captcha wall: reCAPTCHA, Cloudflare Turnstile"
+    ],
+    "measured": true
+  },
+  {
+    "merchant": "panera",
+    "name": "Panera",
+    "url": "https://www.panerabread.com/en-us/gift-cards.html",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": true,
+      "types": [
+        "reCAPTCHA"
+      ],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": false,
+      "submitText": null,
+      "submitDisabled": null,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 0
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "not-drivable",
+    "screenshots": [
+      "panera-1-loaded.png",
+      "panera-no-form.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "could not locate a card-number field (visibleInputs=0, http=200)"
+    ],
+    "measured": true
+  }
+]

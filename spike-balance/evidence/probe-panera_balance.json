@@ -1,0 +1,44 @@
+[
+  {
+    "merchant": "panera_balance",
+    "name": "Panera (real balance page)",
+    "url": "https://www.panerabread.com/en-us/gift-cards/balance.html",
+    "httpStatus": 200,
+    "loadsHeadless": true,
+    "loadError": null,
+    "blockSignals": [],
+    "captcha": {
+      "present": true,
+      "types": [
+        "reCAPTCHA"
+      ],
+      "blocking": false
+    },
+    "loginWall": false,
+    "form": {
+      "cardFound": false,
+      "cardMeta": null,
+      "pinFound": false,
+      "pinMeta": null,
+      "submitFound": false,
+      "submitText": null,
+      "submitDisabled": null,
+      "scopedToForm": false,
+      "passwordField": false,
+      "visibleInputs": 0
+    },
+    "submitted": false,
+    "result": null,
+    "formDrivable": false,
+    "verdict": "not-drivable",
+    "screenshots": [
+      "panera_balance-1-loaded.png",
+      "panera_balance-no-form.png"
+    ],
+    "notes": [
+      "UA=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+      "could not locate a card-number field (visibleInputs=0, http=200)"
+    ],
+    "measured": true
+  }
+]

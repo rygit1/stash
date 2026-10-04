@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stash — Q&A Battle Card</title>
+<style>
+  :root{
+    --bg:#faf6ef; --card:#fffdf9; --ink:#2a2a28; --muted:#6b6b66;
+    --green:#10B981; --line:#e8e1d4; --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.55; padding:48px 20px;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:30px;margin:0 0 4px;letter-spacing:-.5px}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 28px}
+  .rules{
+    background:#fff7e8;border:1px solid #f0e4c8;border-radius:12px;
+    padding:16px 20px;margin-bottom:32px;font-size:14.5px
+  }
+  .rules b{color:var(--ink)}
+  h2{
+    font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--green);
+    margin:40px 0 14px;font-weight:700;border-bottom:2px solid var(--line);padding-bottom:8px
+  }
+  .q{font-weight:650;font-size:16px;margin:22px 0 8px}
+  .a{
+    background:var(--card);border:1px solid var(--line);border-left:3px solid var(--green);
+    border-radius:8px;padding:13px 16px;font-size:15px;box-shadow:var(--shadow)
+  }
+  .note{color:var(--muted);font-size:13px;margin:6px 2px 0;font-style:italic}
+  .five{counter-reset:f;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 22px}
+  .five .row{padding:12px 0;border-bottom:1px solid var(--line)}
+  .five .row:last-child{border-bottom:none}
+  .five .lbl{color:var(--green);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+  .closer{background:#0f1f1a;color:#eafff6;border-radius:12px;padding:20px 24px;font-size:17px;margin-top:14px;text-align:center}
+  strong{color:var(--green)}
+  @media print{body{padding:0;background:#fff}.a{box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Stash — Q&amp;A Battle Card</h1>
+<p class="sub">INC Pitch · Sat 2026-06-13 · Gavin · Ryan · Luca</p>
+
+<div class="rules">
+  <b>Under fire:</b> answer in <b>one breath, then stop</b>. Short + confident beats long + defensive.<br>
+  • Stay <b>Robin Hood</b> — say "featured offers," "how it spreads," never "targeted ads / sell data / CAC."<br>
+  • Never "steal/illegal" — say companies are <b>"banking on you forgetting."</b><br>
+  • Don't know it? "Great question — here's how we'd find out." Never bluff.
+</div>
+
+<h2>★ If you only memorize five</h2>
+<div class="five">
+  <div class="row"><span class="lbl">Privacy</span><br>Read-only, sign in with Google, we never see your password or sell your data.</div>
+  <div class="row"><span class="lbl">Moat</span><br>They build the feature; we build the network — school by school, like Facebook.</div>
+  <div class="row"><span class="lbl">Different</span><br>The only one that <em>finds</em> the money you forgot — automatically.</div>
+  <div class="row"><span class="lbl">Money</span><br>Featured offers + an in-app shop. Finding your money is always free.</div>
+  <div class="row"><span class="lbl">Why real</span><br>It's live — that scan was the real product on a real inbox.</div>
+</div>
+
+<h2>Tier 1 — Most likely + most dangerous</h2>
+
+<div class="q">Why would anyone give you access to their email? That's scary.</div>
+<div class="a">"Totally fair — that's the first thing people ask. Stash is <strong>read-only</strong>. We can't send, delete, or change anything — we only look for gift cards. You sign in through Google, so we never see your password, and you can disconnect in one tap. Same Google sign-in you already use for a hundred apps."</div>
+
+<div class="q">How do I know you're not reading my personal emails / selling my data?</div>
+<div class="a">"We never sell your data — the whole brand is built on that. We only request the read-only gift-card scope, and Google enforces it — we <em>couldn't</em> read your personal mail if we wanted to. Our money comes from featured offers and our shop, not your inbox."</div>
+
+<div class="q">What happens to the data after you scan?</div>
+<div class="a">"Your cards live on your device, not our server. We're not building a profile. Encrypted in transit, stored on your phone, revocable anytime."</div>
+<p class="note">Never claim "end-to-end encrypted" (false). Say "encrypted in transit + stored on your device."</p>
+
+<div class="q">What's stopping Google / Apple / Amazon from just building this?</div>
+<div class="a">"They could build the feature — but it'd be a footnote in a giant app. For us it's the whole company, and we start where they won't bother: students, one school at a time. By the time it's worth their attention, we own the network. Same way Venmo beat the banks."</div>
+
+<div class="q">How are you different from Gyft / Prezzee / CardCash?</div>
+<div class="a">"Every one of them starts with a card you already know you have. Gyft makes you upload by hand. Prezzee just sells you new ones. CardCash buys yours for less than they're worth. <strong>Stash is the only one that finds the money you forgot about — automatically.</strong>"</div>
+
+<div class="q">Isn't this easy to copy?</div>
+<div class="a">"The feature, maybe. The network, no. Once your whole friend group is on Stash, a copycat starts at zero. And the more inboxes we scan, the smarter the finder gets. First-mover plus a product that improves with every user."</div>
+
+<div class="q">Isn't it just a reminder app?</div>
+<div class="a">"You can't remind yourself about money you forgot you had. We <em>find</em> it first — the part you can't do yourself — then delete every excuse not to use it. Cal AI didn't invent calorie counting; it deleted the friction."</div>
+
+<div class="q">Doesn't Apple Wallet already do this?</div>
+<div class="a">"Apple Wallet only holds what you manually add. It has no idea about the $50 Nike card buried in your inbox from two birthdays ago. We find what you'd never think to add."</div>
+
+<h2>Tier 2 — Business model &amp; money</h2>
+
+<div class="q">How do you actually make money?</div>
+<div class="a">"Two ways. Today — featured offers from brands you'd actually use. Next — the Stash Shop, where you buy and send gift cards in-app and we earn a small cut. Finding your own money is always free."</div>
+
+<div class="q">If it's free, isn't the product the user / their data?</div>
+<div class="a">"No — that's exactly what we refuse to be. We make money the honest way: a cut when you <em>choose</em> to buy through us, and offers you can ignore. Your data is never the product."</div>
+
+<div class="q">What does it cost you to run?</div>
+<div class="a">"Under 10 cents to scan an entire inbox. Pure software — no inventory, no shipping — so it scales to millions without our costs really moving."</div>
+
+<div class="q">How big can this get?</div>
+<div class="a">"The US gift card market is $234 billion a year, and $23 billion sits unused right now. We don't need a huge slice — even a small cut of money currently going to waste is a real business."</div>
+
+<div class="q">Why would brands pay you for featured offers?</div>
+<div class="a">"Because we send them customers about to spend. Someone who just found $50 they forgot they had is in buying mode — that's the most valuable moment to put an offer in front of."</div>
+
+<h2>Tier 3 — Growth &amp; customers</h2>
+
+<div class="q">How do you get your first customers?</div>
+<div class="a">"We start at our own school — get it dense, everyone finding money, then go school by school. One network at a time, exactly how Facebook started."</div>
+
+<div class="q">Paid ads or social?</div>
+<div class="a">"Organic only — no ad budget. The find-money moment <em>is</em> the perfect TikTok. Someone screenshots 'I just found $300' and that's the ad. The product makes its own content."</div>
+
+<div class="q">Isn't word of mouth slow?</div>
+<div class="a">"Not when the payoff is instant cash. People don't sit on 'I just found $300' — they share it the second it happens. Fastest growth there is."</div>
+
+<div class="q">What if people try it once and never come back?</div>
+<div class="a">"New gift cards keep landing — birthdays, rewards, refunds — and Stash keeps catching them and reminding you before they expire. A reason to come back every month."</div>
+
+<h2>Tier 4 — Product / tech / accuracy</h2>
+
+<div class="q">How does it actually work?</div>
+<div class="a">"You connect your email read-only. Stash searches for gift-card emails, an AI reads each one to pull the store, balance, and code, and shows them all in one wallet — one tap to use each. You can also snap a photo of a plastic card."</div>
+
+<div class="q">What if it misses cards or gets the amount wrong?</div>
+<div class="a">"We've tested it on real inboxes — it found $434 across six cards on mine with zero false matches. Not perfect yet, but it already finds money people completely forgot, and it gets better with every inbox."</div>
+
+<div class="q">Can you see the current balance, or just the original amount?</div>
+<div class="a">"We always show the original value, and for a growing list of stores we fetch the live balance automatically. There's no universal balance API — so we're honest: original up front, live balance where we can get it."</div>
+
+<div class="q">What about physical plastic cards?</div>
+<div class="a">"Snap a photo, front and back. It reads the number, barcode, even the PIN, and adds it to your wallet. Plastic and digital in one place."</div>
+
+<div class="q">Did you build this or is it a mockup?</div>
+<div class="a">"It's real and live — stashloot.vercel.app. What you saw scan was the actual product on a real inbox, not a slideshow."</div>
+
+<h2>Tier 5 — Market / demand proof</h2>
+
+<div class="q">Your survey was small — is the demand real?</div>
+<div class="a">"Small sample, but unanimous — every group said the same thing, and it lines up with the national number: $21 billion a year unused. Our responses just confirmed what the whole country already shows."</div>
+
+<div class="q">Do teens really have enough in gift cards to matter?</div>
+<div class="a">"To a teen, $80 found is huge. But teens are our wedge — most digital, most scattered. The real market is everyone: Gen X averages $255 unused. $80 to the user, $21 billion as a business."</div>
+
+<div class="q">Who cares about a $20 card?</div>
+<div class="a">"Nobody cares about one $20 card — that's exactly why it's a $21 billion problem. Everyone ignores small amounts and companies count on it. We make ignoring it impossible."</div>
+
+<h2>Tier 6 — Team / why you</h2>
+
+<div class="q">Why are you three the right people to build this?</div>
+<div class="a">"We built it because it happened to us — tired of finding expired cards with money still on them. We shipped a working product in days, not months. We move fast and we use the thing we're building."</div>
+
+<div class="q">What happens after camp — is this real or a project?</div>
+<div class="a">"It's live right now and we're not stopping. Plan is to seed our own school this fall and grow from there."</div>
+
+<h2>Tier 7 — Adversarial curveballs</h2>
+
+<div class="q">This sounds illegal / like you're stealing from companies.</div>
+<div class="a">"Nothing illegal — the money is legally yours, it's your gift card. We're not taking from companies; we're stopping them from banking on you forgetting. That bet has a name in their own filings: breakage. We just end the bet."</div>
+
+<div class="q">Gift cards legally can't expire for 5 years — so what's the problem?</div>
+<div class="a">"Exactly — the money doesn't disappear, it gets forgotten. The law protects the balance; it doesn't make you remember the card. That gap — forgotten money that's still valid — is the whole problem we solve."</div>
+
+<div class="q">What's your biggest weakness / what could kill this?</div>
+<div class="a">"Trust — convincing people to connect their email. That's why read-only and 'we never sell your data' aren't fine print, they're the front of the brand. We win by being the one money app people actually trust."</div>
+
+<div class="q">You can't pull cash out — so what does "take it back" mean?</div>
+<div class="a">"Right — a gift card is store credit, you can't cash it out, and we don't pretend you can. 'Take it back' means using it before the company keeps it. We find it, hand you the code, one tap to spend."</div>
+
+<div class="q">What if Google shuts off your email access?</div>
+<div class="a">"We use the official read-only Gmail scope the way Google intends, so we're inside their rules. And we're not locked to Gmail — the same model works on Outlook, plus a forward-your-email path that needs no login."</div>
+
+<div class="q">(If the demo fails live) Your app just broke.</div>
+<div class="a">"Live demos and camp wifi — classic. Here's the clean scan we recorded earlier <em>(roll backup video)</em>. Same product, same $434.50." <span class="note">Stay calm, smile, never apologize twice.</span></div>
+
+<h2>Closer</h2>
+<div class="closer">"You didn't watch a forecast — you watched a room find money it forgot it had. That's Stash."</div>
+
+</div>
+</body>
+</html>
