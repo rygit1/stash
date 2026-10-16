@@ -2179,38 +2179,6 @@ function PlasticScanner({
   }
 
   // Shared by the file path and the live-camera shutter, dataUrl is already downscaled JPEG.
-  // Reader card shape, kept local so a reader outage is a typed null rather than a thrown scan.
-  type ReaderCard = {
-    isGiftCard: boolean;
-    store: string | null;
-    amount: number | null;
-    code: string | null;
-    pin: string | null;
-    confidence?: "high" | "medium" | "low";
-    issue?: string | null;
-  };
-
-  // Call the card reader, with ONE retry on a server-side failure. Returns null when it cannot be
-  // reached at all, so the caller can fall back to the barcode instead of throwing the scan away.
-  // A 4xx means the request itself was wrong (image too big, wrong type) and retrying cannot help.
-  async function callReader(images: string[]): Promise<ReaderCard | null> {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const r = await fetch("/api/scan-card", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ images }),
-        });
-        if (r.ok) return (await r.json()) as ReaderCard;
-        if (r.status < 500) return null;
-      } catch {
-        /* network blip, fall through to the retry */
-      }
-      if (attempt === 0) await new Promise((res) => setTimeout(res, 700));
-    }
-    return null;
-  }
-
   async function processShot(dataUrl: string) {
     const target = pickTarget.current;
     setPhase("reading");
@@ -2219,52 +2187,31 @@ function PlasticScanner({
     setPreview(nextShots[0]);
 
     // THE BARCODE IS READ ON THIS DEVICE: free, offline, no key, and exact when it hits.
-    // It is awaited OUTSIDE the reader call on purpose. The old code awaited it inside the try,
-    // so any reader failure jumped to the catch and DISCARDED a perfect card number, showing
-    // "couldn't reach the card reader" for a scan that never needed the reader at all.
+    // It is the only reader now. Store, value and PIN are always typed in on the confirm screen.
     const decodedRaw = await decodeCardBarcode(dataUrl);
     const decoded = decodedRaw ?? (nextShots.length > 1 ? barcode : null);
     setBarcode(decoded);
 
-    const card = await callReader(nextShots);
-    const down = card === null;
-    setReaderDown(down);
-
-    // A miss ONLY when neither source gave us anything usable.
-    if (!decoded && !card?.code && !card?.store) {
-      const why = card?.issue ? ISSUE_MSG[card.issue] : undefined;
-      setMissMsg(
-        down
-          ? "Couldn't read the card details, and there was no barcode to fall back on. Try again, or type the card in by hand."
-          : (why ??
-            (nextShots.length > 1
-              ? "Still couldn't read it across both shots, retake with less glare."
-              : "Couldn't read a gift card in that shot, try a flatter, brighter photo.")),
-      );
-      setPhase("miss");
+    // No barcode: straight to the confirm screen with empty boxes to type in.
+    if (!decoded) {
+      setStore(""); setCode(""); setPin(""); setAmount(""); setExpires("");
+      setShaky({}); setReaderDown(false); setPhase("confirm");
       return;
     }
 
-    setStore(card?.store ?? "");
-    setAmount(typeof card?.amount === "number" ? String(card.amount) : "");
-    setCode(decoded ?? card?.code ?? ""); // barcode is exact, it wins over the read
-    setPin(card?.pin ?? "");
-    setConfidence(down ? "low" : card?.confidence ?? "medium");
-    setIssue(card?.issue ?? null);
+    setStore("");
+    setAmount("");
+    setCode(decoded);
+    setPin("");
+    setConfidence("low");
+    setIssue(null);
+    // A barcode-read number is exact, so nothing is flagged.
+    setShaky({ code: false, pin: false, store: false, amount: false });
+    setReaderDown(true);
 
-    // Flag ONLY fields that actually hold a value AND came from a source we do not fully trust.
-    // A barcode-read number is exact, so it is never flagged even when everything else is shaky.
-    const eyeShaky = down || card?.confidence === "low" || Boolean(card?.issue);
-    setShaky({
-      code: !decoded && eyeShaky && Boolean(card?.code),
-      pin: eyeShaky && Boolean(card?.pin),
-      store: eyeShaky && Boolean(card?.store),
-      amount: eyeShaky && typeof card?.amount === "number",
-    });
-
-    // With the reader down there is no second side worth shooting: it can only read a barcode,
-    // and we already have that. Go straight to confirm so the person can fill in the rest.
-    setPhase(down || nextShots.length > 1 ? "confirm" : "backprompt");
+    // There is no second side worth shooting: only a barcode can be read, and we already have it.
+    // Go straight to confirm so the person can fill in the rest.
+    setPhase("confirm");
   }
 
   async function addToWallet() {
