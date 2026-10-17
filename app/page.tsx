@@ -756,7 +756,7 @@ function Landing({
           <div className="reveal max-w-2xl">
             <Eyebrow>What it does</Eyebrow>
             <h2 className="mt-3 text-[clamp(1.9rem,4vw,2.75rem)] font-bold leading-tight tracking-tight text-zinc-900">
-              Sebi is Cool
+              Everything it takes to get your money back.
             </h2>
             <p className="mt-4 text-lg text-zinc-500">
               Stash doesn&rsquo;t just list cards. It reads your inbox, checks balances, tracks what&rsquo;s spent, and
