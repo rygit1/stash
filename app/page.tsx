@@ -196,6 +196,27 @@ const RESET_KEYS = [
   "loot_notified", // expiry-notification dedupe
 ] as const;
 
+// The latest Gmail scan, kept on this device only (same place as scanned plastic cards).
+const STASH_KEY = "loot_stash_v1";
+function loadStash(): { cards: Found[]; stats: Stats } | null {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STASH_KEY) ?? "null") as { cards?: unknown; stats?: unknown } | null;
+    if (!raw || !Array.isArray(raw.cards) || !raw.stats || typeof raw.stats !== "object") return null;
+    // Recompute anything time-based: a card saved last week may be expiring now.
+    const cards = (raw.cards as Found[]).map((c) => ({ ...c, expiring: isExpiringSoon(c.expires) }));
+    return { cards, stats: raw.stats as Stats };
+  } catch {
+    return null;
+  }
+}
+function persistStash(cards: Found[], stats: Stats) {
+  try {
+    localStorage.setItem(STASH_KEY, JSON.stringify({ cards, stats, savedAt: new Date().toISOString() }));
+  } catch {
+    /* private mode or full storage: the wallet still works for this visit */
+  }
+}
+
 function wipeSavedCards() {
   for (const k of RESET_KEYS) {
     try {
@@ -238,40 +259,126 @@ function brandFor(store: string | null) {
   for (const key in BRAND) if (k.includes(key)) return BRAND[key];
   return { emoji: "🎁", color: "#10b981" };
 }
-function isExpiringSoon(expires: string | null) {
-  if (!expires) return false;
-  const t = Date.parse(expires);
-  if (Number.isNaN(t)) return false;
-  const days = (t - Date.now()) / 86_400_000;
-  return days > 0 && days <= 30;
-}
-// Whole days until a real, upcoming expiry. null = no expiry, unparseable, or already elapsed,
-// in every one of those cases we show nothing (most gift cards genuinely never expire).
-function daysUntil(expires: string | null): number | null {
+// The expiry as a LOCAL calendar day. "2026-11-02" means the whole of Nov 2 where the person is;
+// Date.parse would read it as UTC midnight, which is the evening before across the Americas.
+function expiryDay(expires: string | null): Date | null {
   if (!expires) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(expires);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   const t = Date.parse(expires);
   if (Number.isNaN(t)) return null;
-  const d = Math.ceil((t - Date.now()) / 86_400_000);
-  return d > 0 ? d : null;
+  const d = new Date(t);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
-const expTs = (expires: string | null) => {
-  const t = expires ? Date.parse(expires) : NaN;
-  return Number.isNaN(t) ? Infinity : t;
-};
-// Tiny countdown chip: amber if ≤30 days out, zinc if further, nothing if no/elapsed expiry.
-function ExpiryBadge({ expires }: { expires: string | null }) {
+// Whole calendar days from today to the expiry day: 0 = expires today, negative = already expired,
+// null = no expiry or unparseable (most gift cards genuinely never expire).
+function daysLeft(expires: string | null): number | null {
+  const day = expiryDay(expires);
+  if (!day) return null;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((day.getTime() - today.getTime()) / 86_400_000);
+}
+// Days until a card that is still usable (today counts). null = no expiry, or already expired.
+function daysUntil(expires: string | null): number | null {
+  const d = daysLeft(expires);
+  return d !== null && d >= 0 ? d : null;
+}
+function isExpiringSoon(expires: string | null) {
   const d = daysUntil(expires);
+  return d !== null && d <= 30;
+}
+const expTs = (expires: string | null) => expiryDay(expires)?.getTime() ?? Infinity;
+// Countdown chip: red for today/tomorrow or expired, amber within 30 days, grey further out.
+function ExpiryBadge({ expires }: { expires: string | null }) {
+  const d = daysLeft(expires);
   if (d === null) return null;
-  const soon = d <= 30;
+  const label = d < 0 ? "expired" : d === 0 ? "expires today" : d === 1 ? "expires tomorrow" : `expires in ${d} days`;
+  const tone = d <= 1 ? "bg-red-100 text-red-700" : d <= 30 ? "bg-amber-100 text-amber-700" : "bg-zinc-100 text-zinc-500";
+  return <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone}`}>{label}</span>;
+}
+
+// ── Calendar reminders ──────────────────────────────────────────────────────────────
+// The one reminder that works with Stash closed: an all-day event on the expiry day, with alerts
+// at 9am a week before and 9am the day before. The card's code and PIN are deliberately left out,
+// since calendars sync to the cloud and get shared.
+const ymd = (d: Date) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+const icsText = (s: string) => s.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\n/g, "\\n");
+function reminderText(store: string, amount: number | null) {
+  const what = amount !== null && amount > 0 ? `$${amount.toFixed(2)} ${store} gift card` : `${store} gift card`;
+  return { title: `Use your ${what} (expires today)`, details: `Your ${what} expires today. Open Stash to see the code: https://stashinc.pro` };
+}
+function downloadReminder(store: string, amount: number | null, day: Date) {
+  const next = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+  const { title, details } = reminderText(store, amount);
+  const alarm = (trigger: string) => ["BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${icsText(title)}`, `TRIGGER:${trigger}`, "END:VALARM"];
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Stash//Expiry reminder//EN",
+    "BEGIN:VEVENT",
+    `UID:${ymd(day)}-${Math.random().toString(36).slice(2)}@stashinc.pro`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}`,
+    `DTSTART;VALUE=DATE:${ymd(day)}`,
+    `DTEND;VALUE=DATE:${ymd(next)}`,
+    `SUMMARY:${icsText(title)}`,
+    `DESCRIPTION:${icsText(details)}`,
+    ...alarm("-P6DT15H"), // 9am, 7 days before
+    ...alarm("-PT15H"), // 9am, the day before
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+  const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${store.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "gift-card"}-expires.ics`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function googleCalendarUrl(store: string, amount: number | null, day: Date) {
+  const next = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+  const { title, details } = reminderText(store, amount);
+  const q = new URLSearchParams({ action: "TEMPLATE", text: title, dates: `${ymd(day)}/${ymd(next)}`, details });
+  return `https://calendar.google.com/calendar/render?${q.toString()}`;
+}
+// "Remind me" links under a card that has an upcoming expiry. Nothing for cards with no or past expiry.
+function ExpiryReminder({ store, amount, expires }: { store: string; amount: number | null; expires: string | null }) {
+  const day = expiryDay(expires);
+  if (!day || daysUntil(expires) === null) return null;
   return (
-    <span
-      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-        soon ? "bg-amber-100 text-amber-700" : "bg-zinc-100 text-zinc-500"
-      }`}
-    >
-      expires in {d} day{d === 1 ? "" : "s"}
-    </span>
+    <p className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-zinc-400">
+      <span>📅 Remind me:</span>
+      <button onClick={() => downloadReminder(store, amount, day)} className="font-semibold text-emerald-700 hover:text-emerald-800">
+        Calendar
+      </button>
+      <span>&middot;</span>
+      <a href={googleCalendarUrl(store, amount, day)} target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-700 hover:text-emerald-800">
+        Google Calendar
+      </a>
+    </p>
   );
+}
+
+// Browser notification. Android Chrome refuses `new Notification()` from a page and only allows it
+// through a service worker, so use /sw.js when the browser supports one.
+async function showReminderNotification(title: string, body: string) {
+  if ("serviceWorker" in navigator) {
+    try {
+      await navigator.serviceWorker.register("/sw.js");
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(title, { body, tag: "stash-expiry" });
+      return;
+    } catch {
+      /* fall through to the page-level API */
+    }
+  }
+  try {
+    new Notification(title, { body, tag: "stash-expiry" });
+  } catch {
+    /* blocked or unsupported: the in-app banner still shows */
+  }
 }
 
 // Per-card auto-resolve status (localhost only): the hidden-code agent's progress for one card.
@@ -303,7 +410,17 @@ export default function Home() {
   // Load after mount so the SSR'd landing markup matches the first client render.
   useEffect(() => {
     setPhysical(loadPhysical());
+    const saved = loadStash();
+    if (saved) {
+      setCards(saved.cards);
+      setStats(saved.stats);
+    }
   }, []);
+  // Keep the latest Gmail scan on this device, so countdowns and reminders are still there next time.
+  // Only after a scan has happened (stats set); "Clear all gift cards" removes it with the rest.
+  useEffect(() => {
+    if (stats) persistStash(cards, stats);
+  }, [cards, stats]);
 
   // Upsert + dedupe by code: re-scanning the same plastic card replaces it, never doubles it.
   const addPhysical = (card: PhysicalCard) => {
@@ -443,7 +560,7 @@ export default function Home() {
   if (stage === "landing") {
     return (
       <Landing
-        physicalCount={physical.length}
+        physicalCount={physical.length + cards.length}
         onOpenWallet={() => setStage("wallet")}
         onAddPhysical={(c) => {
           addPhysical(c);
@@ -720,7 +837,7 @@ function Landing({
               </div>
               {physicalCount > 0 && (
                 <button onClick={onOpenWallet} className="mt-5 text-sm font-semibold text-emerald-600 hover:text-emerald-700">
-                  💳 {`${physicalCount} scanned ${physicalCount === 1 ? "card" : "cards"} in your wallet`} &rarr; open
+                  💳 {`${physicalCount} ${physicalCount === 1 ? "card" : "cards"} in your wallet`} &rarr; open
                 </button>
               )}
               <p className="mt-7 text-sm text-zinc-400">
@@ -1111,15 +1228,15 @@ function Wallet({
     physUsed.concat(physSpentDown).reduce((s, p) => s + (p.amount ?? 0), 0);
   const availCount = avail.length + physAvail.length;
   const found = useCountUp(total, 1200);
-  const atRisk = avail.filter((c) => c.expiring);
-  const atRiskTotal = atRisk.reduce((s, c) => s + worth(c), 0);
 
   // ── Status tabs ──────────────────────────────────────────────────────────────
   // Tabs filter the LIST only; the "Still yours" headline + count above always reflect `avail`.
   const [tab, setTab] = useState<"all" | "available" | "expiring" | "used">("all");
   // Cards with a REAL upcoming expiry (≤30d), email + physical, soonest-first.
   const emailExpiring = avail.filter((c) => isExpiringSoon(c.expires));
-  const physExpiring = physAvail.filter((p) => isExpiringSoon(p.expires));
+  // Every unused plastic card counts here, even while the Gmail view keeps them on their own screen:
+  // a reminder must never miss a card just because of which view is open.
+  const physExpiring = physical.filter((p) => !isUsedP(p) && !isSpentDownP(p) && isExpiringSoon(p.expires));
   type ExpItem = { k: "email"; c: Found } | { k: "phys"; p: PhysicalCard };
   const expiringList: ExpItem[] = [
     ...emailExpiring.map((c): ExpItem => ({ k: "email", c })),
@@ -1130,7 +1247,9 @@ function Wallet({
     const d = daysUntil(it.k === "email" ? it.c.expires : it.p.expires);
     return d !== null && d <= 7;
   });
-  const soon7Total = soon7.reduce((s, it) => s + (it.k === "email" ? worth(it.c) : it.p.amount ?? 0), 0);
+  const soon7Total = soon7.reduce((s, it) => s + (it.k === "email" ? worth(it.c) : adjustedP(it.p) ?? 0), 0);
+  const expiringTotal = expiringList.reduce((s, it) => s + (it.k === "email" ? worth(it.c) : adjustedP(it.p) ?? 0), 0);
+  const expiringNames = expiringList.map((it) => (it.k === "email" ? it.c.store : it.p.store));
 
   const usedN = used.length + physUsed.length + spentDown.length + physSpentDown.length;
   const showAvailList = tab === "all" || tab === "available";
@@ -1163,13 +1282,10 @@ function Wallet({
     } catch {}
     const names = soon7.map((it) => (it.k === "email" ? it.c.store : it.p.store));
     const lead = names.slice(0, 2).join(" & ") + (names.length > 2 ? ` +${names.length - 2} more` : "");
-    try {
-      new Notification(`⏰ Don't lose $${soon7Total.toFixed(0)}`, {
-        body: `Expiring within a week: ${lead}. Open Stash to use ${soon7.length > 1 ? "them" : "it"}.`,
-      });
-    } catch {
-      /* notification construction blocked, degrade silently */
-    }
+    void showReminderNotification(
+      soon7Total > 0 ? `⏰ Don't lose $${soon7Total.toFixed(0)}` : "⏰ A gift card is about to expire",
+      `Expiring within a week: ${lead}. Open Stash to use ${soon7.length > 1 ? "them" : "it"}.`,
+    );
   }, [soon7, soon7Total]);
 
   const [notifyDenied, setNotifyDenied] = useState(false);
@@ -1311,10 +1427,15 @@ function Wallet({
         </a>
       )}
 
-      {atRisk.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-          ⚠️ ${atRiskTotal.toFixed(0)} expiring within 30 days &mdash; {atRisk.map((c) => c.store).join(" & ")}, use {atRisk.length > 1 ? "them" : "it"} now
-        </div>
+      {expiringList.length > 0 && (
+        <button
+          onClick={() => setTab("expiring")}
+          className="mt-4 w-full rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm font-medium text-amber-800"
+        >
+          ⚠️ {expiringTotal > 0 ? `$${expiringTotal.toFixed(0)} ` : ""}expiring within 30 days &mdash;{" "}
+          {expiringNames.slice(0, 2).join(" & ")}
+          {expiringNames.length > 2 ? ` +${expiringNames.length - 2} more` : ""}, use {expiringList.length > 1 ? "them" : "it"} now
+        </button>
       )}
 
       <div className="mt-5 flex gap-1 rounded-full bg-zinc-100 p-1">
@@ -1334,12 +1455,7 @@ function Wallet({
 
       {tab === "expiring" ? (
         <div className="mt-5 flex flex-col gap-3">
-          <RemindToggle
-            on={notifyOn}
-            denied={notifyDenied}
-            disabled={soon7.length === 0}
-            onEnable={enableNotify}
-          />
+          <RemindToggle on={notifyOn} denied={notifyDenied} onEnable={enableNotify} />
           {expiringList.length === 0 ? (
             <div className="rounded-2xl border border-zinc-100 bg-white px-4 py-6 text-center shadow-sm">
               <p className="text-base font-semibold text-zinc-900">Nothing expiring soon ✨</p>
@@ -1907,9 +2023,10 @@ function PhysicalCardRow({
       </div>
 
       <div className="p-3">
-        {daysUntil(card.expires) !== null && (
-          <div className="mb-2">
+        {daysLeft(card.expires) !== null && (
+          <div className="mb-2 flex flex-wrap items-center gap-2">
             <ExpiryBadge expires={card.expires} />
+            <ExpiryReminder store={card.store} amount={card.amount} expires={card.expires} />
           </div>
         )}
         {spent > 0 &&
@@ -2721,6 +2838,11 @@ function CardRow({
           <p className="text-lg font-bold tabular-nums text-emerald-600">${card.amount.toFixed(2)}</p>
         )}
       </div>
+      {daysUntil(card.expires) !== null && (
+        <div className="mt-1.5 pl-14">
+          <ExpiryReminder store={card.store} amount={worth(card)} expires={card.expires} />
+        </div>
+      )}
 
       <div className="mt-2 flex flex-col gap-2">
         {unlocking ? (
@@ -2923,17 +3045,7 @@ function UsedRow({
 
 // Honest browser reminder toggle. Fires only when Stash is OPEN (on-load), so the caption says so
 // plainly, no implication of background push. Hidden entirely when the Notification API is absent.
-function RemindToggle({
-  on,
-  denied,
-  disabled,
-  onEnable,
-}: {
-  on: boolean;
-  denied: boolean;
-  disabled: boolean; // nothing within 7 days → nothing to remind about
-  onEnable: () => void;
-}) {
+function RemindToggle({ on, denied, onEnable }: { on: boolean; denied: boolean; onEnable: () => void }) {
   if (typeof window !== "undefined" && typeof Notification === "undefined") return null;
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white px-3.5 py-3 shadow-sm">
@@ -2944,21 +3056,20 @@ function RemindToggle({
         ) : (
           <button
             onClick={onEnable}
-            disabled={disabled}
-            className="h-8 shrink-0 rounded-full bg-zinc-900 px-3.5 text-xs font-semibold text-white transition active:scale-[0.98] disabled:opacity-40"
+            className="h-8 shrink-0 rounded-full bg-zinc-900 px-3.5 text-xs font-semibold text-white transition active:scale-[0.98]"
           >
             Turn on
           </button>
         )}
       </div>
-      <p className="mt-1.5 text-[11px] leading-snug text-zinc-400">fires when you open Stash, background reminders are coming</p>
+      <p className="mt-1.5 text-[11px] leading-snug text-zinc-400">
+        Alerts you when you open Stash and a card expires within a week. For a reminder even when Stash is closed, use
+        📅 Remind me on the card to add it to your calendar.
+      </p>
       {denied && (
         <p className="mt-1 text-[11px] leading-snug text-amber-700">
           Notifications are blocked in your browser, enable them in site settings to get reminders.
         </p>
-      )}
-      {!denied && disabled && !on && (
-        <p className="mt-1 text-[11px] leading-snug text-zinc-400">nothing&rsquo;s within 7 days right now, so there&rsquo;s nothing to remind about yet</p>
       )}
     </div>
   );
