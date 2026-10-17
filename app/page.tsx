@@ -864,24 +864,8 @@ function Landing({
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="border-t border-zinc-200/80 bg-white">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 py-12 sm:px-8 md:flex-row md:items-center md:justify-between">
-          <div className="max-w-sm">
-            <Wordmark />
-            <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-              Read-only &middot; we only look for gift cards &middot; nothing else is stored.
-            </p>
-          </div>
-          <a
-            href="/api/google/start"
-            className="inline-flex h-12 w-fit items-center gap-2.5 rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98]"
-          >
-            <GoogleIcon /> Connect Gmail
-          </a>
-        </div>
-        <div className="border-t border-zinc-200/80">
-          <div className="mx-auto w-full max-w-6xl px-5 py-5 text-xs text-zinc-400 sm:px-8">
-            &copy; {new Date().getFullYear()} Stash &middot; Find the gift-card money you forgot about.
-          </div>
+        <div className="mx-auto w-full max-w-6xl px-5 py-5 text-xs text-zinc-400 sm:px-8">
+          &copy; {new Date().getFullYear()} Stash &middot; Find the gift-card money you forgot about.
         </div>
       </footer>
     </div>
