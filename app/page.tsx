@@ -985,6 +985,10 @@ function Landing({
           &copy; {new Date().getFullYear()} Stash &middot; Find the gift-card money you forgot about. &middot;{" "}
           <a href="/privacy" className="font-medium text-zinc-500 underline hover:text-zinc-700">
             Privacy Policy
+          </a>{" "}
+          &middot;{" "}
+          <a href="/terms" className="font-medium text-zinc-500 underline hover:text-zinc-700">
+            Terms of Service
           </a>
         </div>
       </footer>
