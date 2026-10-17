@@ -688,7 +688,7 @@ const STEPS: Step[] = [
 ];
 
 const FAQ_ITEMS = [
-  { q: "Is it safe to connect my email?", a: "Yes. Stash uses Google's read-only access, it can find your gift cards but can never send, delete, or change anything. We only look for gift-card emails, store nothing, and you can disconnect in one tap." },
+  { q: "Is it safe to connect my email?", a: "Yes. Stash uses Google's read-only access, it can find your gift cards but can never send, delete, or change anything. We only look for gift-card emails, which our AI reads to pull out the card details. We keep nothing on our servers, and you can disconnect in one tap." },
   { q: "What if I don't use Gmail?", a: "Gmail works today, and Outlook is next (the same kind of connection). No email account? Scan a physical card with your camera, or forward a gift-card email to us." },
   { q: "Do gift cards actually expire?", a: "Most don't, which is exactly how companies bank on you forgetting. It's a $21-billion-a-year business they call “breakage.” For the ones that do expire, Stash counts down the days and reminds you." },
   { q: "What about physical, plastic cards?", a: "Point your camera at one. Stash auto-captures the moment the image is clear and reads the number right off the barcode, then keeps it in your wallet with the rest." },
@@ -841,7 +841,7 @@ function Landing({
                 </button>
               )}
               <p className="mt-7 text-sm text-zinc-400">
-                Read-only &middot; we only look for gift cards &middot; nothing else is stored
+                Read-only &middot; we only look for gift cards &middot; nothing is kept on our servers
               </p>
             </div>
             <div className="reveal reveal-d1 order-first lg:order-last">
@@ -939,7 +939,7 @@ function Landing({
           <div className="reveal mt-12 grid gap-5 sm:grid-cols-2">
             {[
               { icon: "🔒", title: "Read-only, always", body: "Google itself enforces it. Stash can read to find your cards, but it can never send, delete, or change a single thing in your inbox." },
-              { icon: "🎯", title: "Only gift cards", body: "We search for gift-card emails and nothing else. The rest of your inbox is never opened, never read, never seen." },
+              { icon: "🎯", title: "Only gift cards", body: "We search for gift-card emails and nothing else, and only those are read, by our AI, to pull out the card details. The rest of your inbox is never opened." },
               { icon: "📱", title: "Stored on your device", body: "Your cards live in your browser, on your device, not on our servers. We keep no copy and build no profile on you." },
               { icon: "🔐", title: "Encrypted & revocable", body: "Every connection is encrypted in transit (TLS), and you can disconnect or revoke access from your Google account in one tap." },
             ].map((p) => (
@@ -951,7 +951,7 @@ function Landing({
             ))}
           </div>
           <p className="reveal mt-6 text-center text-sm text-zinc-400">
-            Each scan reads fresh and forgets &middot; nothing is kept &middot; disconnect anytime
+            Nothing is kept on our servers &middot; cards stay on your device &middot; disconnect anytime
           </p>
         </section>
 
@@ -982,7 +982,10 @@ function Landing({
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="border-t border-zinc-200/80 bg-white">
         <div className="mx-auto w-full max-w-6xl px-5 py-5 text-xs text-zinc-400 sm:px-8">
-          &copy; {new Date().getFullYear()} Stash &middot; Find the gift-card money you forgot about.
+          &copy; {new Date().getFullYear()} Stash &middot; Find the gift-card money you forgot about. &middot;{" "}
+          <a href="/privacy" className="font-medium text-zinc-500 underline hover:text-zinc-700">
+            Privacy Policy
+          </a>
         </div>
       </footer>
     </div>
