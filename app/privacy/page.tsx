@@ -154,7 +154,23 @@ export default function PrivacyPage() {
         </ul>
       </Section>
 
-      <Section title="6. Security">
+      <Section title="6. Do Not Track and California">
+        <p>
+          Stash doesn&rsquo;t track you across other websites and doesn&rsquo;t use tracking or advertising cookies, so it
+          works the same whether or not your browser sends a &ldquo;Do Not Track&rdquo; signal. We don&rsquo;t sell or
+          share personal information.
+        </p>
+        <p>
+          If you live in California, you can ask what information we have about you or ask us to delete it by emailing{" "}
+          <a href={`mailto:${CONTACT}`} className="font-semibold text-emerald-700 underline">
+            {CONTACT}
+          </a>
+          . Because your cards are stored only in your own browser, &ldquo;Clear all gift cards&rdquo; deletes them
+          immediately.
+        </p>
+      </Section>
+
+      <Section title="7. Security">
         <p>
           All traffic to Stash is encrypted (HTTPS). Gmail access is read-only and limited to what a scan needs. The Google
           access token is kept in a secure cookie that the page&rsquo;s own scripts can&rsquo;t read. The site sends strict
@@ -162,11 +178,11 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
-      <Section title="7. Children">
+      <Section title="8. Children">
         <p>Stash is not meant for children under 13, and we don&rsquo;t knowingly collect their information.</p>
       </Section>
 
-      <Section title="8. Google API Services User Data Policy">
+      <Section title="9. Google API Services User Data Policy">
         <p>
           Stash&rsquo;s use and transfer to any other app of information received from Google APIs will adhere to the{" "}
           <a
@@ -179,7 +195,7 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
-      <Section title="9. Changes to this policy">
+      <Section title="10. Changes to this policy">
         <p>
           If we change how Stash handles your data, we&rsquo;ll update this page and the date at the top. If a change
           affects your Gmail data, we&rsquo;ll ask for your permission again before it applies.
