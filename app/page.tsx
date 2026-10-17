@@ -738,7 +738,7 @@ function Landing({
           <div className="mx-auto grid w-full max-w-6xl grid-cols-1 divide-y divide-zinc-200/80 px-5 py-12 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-8 sm:py-14">
             {[
               { v: "$21B", l: "in gift cards go unredeemed every year" },
-              { v: "$244", l: "the average person forgets they have" },
+              { v: "$244", l: "in gift cards the average person forgets they have" },
               { v: "43%", l: "of Americans are holding an unused card" },
             ].map((s, i) => (
               <div key={s.v} className={`reveal reveal-d${i} flex flex-col items-center py-6 text-center sm:px-6 sm:py-0`}>
