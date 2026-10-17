@@ -590,25 +590,27 @@ export default function Home() {
 
 // ── Landing brand kit ────────────────────────────────────────────────────────
 // The emerald card glyph that doubles as the Stash logo.
-function StashGlyph({ className = "h-7 w-7" }: { className?: string }) {
+// The Stash mark: a green "$" card fanned over two outlined cards.
+function StashGlyph({ className = "h-8 w-9" }: { className?: string }) {
   return (
-    <span
-      className={`inline-flex items-center justify-center rounded-[7px] bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-sm shadow-emerald-600/30 ${className}`}
-      aria-hidden="true"
-    >
-      <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
-        <path d="M2.5 9.5h19" />
-      </svg>
-    </span>
+    <svg viewBox="0 0 44 38" className={className} aria-hidden="true">
+      <g fill="#ffffff" stroke="#1c1c1e" strokeWidth={1.4} strokeLinejoin="round">
+        <rect x="19" y="3" width="19" height="27" rx="2.4" transform="rotate(-34 35 30)" />
+        <rect x="19" y="3" width="19" height="27" rx="2.4" transform="rotate(-17 35 30)" />
+      </g>
+      <rect x="19" y="2" width="20" height="28" rx="2.4" fill="#2fbf71" />
+      <text x="22" y="11.4" fontSize="9" fontWeight="800" fill="#ffffff" fontFamily="Arial, Helvetica, sans-serif">
+        $
+      </text>
+    </svg>
   );
 }
 
 function Wordmark({ light = false }: { light?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2">
-      <StashGlyph className="h-7 w-7" />
-      <span className={`text-[19px] font-semibold tracking-tight ${light ? "text-white" : "text-zinc-900"}`}>Stash</span>
+      <StashGlyph className="h-8 w-9" />
+      <span className={`text-[20px] font-bold tracking-tight ${light ? "text-white" : "text-zinc-900"}`}>Stash</span>
     </span>
   );
 }
