@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
-import { merchantAction } from "@/lib/merchants";
+import { merchantAction, nearbyMapsUrl } from "@/lib/merchants";
 import { decodeCardBarcode, frameQuality } from "@/lib/barcode";
 import { code128Svg } from "@/lib/barcode128";
 
@@ -2085,6 +2085,7 @@ function PhysicalCardRow({
         >
           {copied ? "Code copied ✓, opening…" : `${action.label} →`}
         </button>
+        <NearbyLink store={card.store} />
         <SpendFooter spends={spends} onLog={onLogSpend} onRemove={onRemoveSpend} onMarkUsed={onMarkUsed} />
       </div>
     </div>
@@ -2745,6 +2746,22 @@ function CardBarcode({ code }: { code: string }) {
   );
 }
 
+// "📍 Find one near me": opens the phone's maps app searching for this store. Apple Maps on Apple
+// devices, Google Maps elsewhere, decided at tap time. Hidden for online-only cards.
+function NearbyLink({ store }: { store: string | null }) {
+  if (!nearbyMapsUrl(store, false)) return null;
+  const open = () => {
+    const apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+    const url = nearbyMapsUrl(store, apple);
+    if (url) window.open(url, "_blank", "noopener");
+  };
+  return (
+    <button onClick={open} className="mt-1.5 w-full text-center text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+      📍 Find {store} near me
+    </button>
+  );
+}
+
 function CardRow({
   card,
   resolve,
@@ -2910,6 +2927,7 @@ function CardRow({
       >
         {copied ? "Code copied ✓, opening…" : `${action.label} →`}
       </button>
+      <NearbyLink store={card.store} />
       <SpendFooter spends={spends} onLog={onLogSpend} onRemove={onRemoveSpend} onMarkUsed={onMarkUsed} onNotMine={onNotMine} />
     </div>
   );
