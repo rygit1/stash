@@ -203,7 +203,11 @@ export default function PrivacyPage() {
       </Section>
 
       <p className="mt-12 border-t border-zinc-200 pt-6 text-sm text-zinc-400">
-        Questions? Email{" "}
+        See also our{" "}
+        <a href="/terms" className="text-emerald-700 underline">
+          Terms of Service
+        </a>
+        . Questions? Email{" "}
         <a href={`mailto:${CONTACT}`} className="text-emerald-700 underline">
           {CONTACT}
         </a>
