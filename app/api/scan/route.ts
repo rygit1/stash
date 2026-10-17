@@ -213,13 +213,14 @@ export async function GET() {
   const cards = found.filter((c) => {
     const key = c.code || `${(c.store ?? "").toLowerCase()}|${c.amount}`;
     if (seen.has(key)) {
-      console.log(`[scan][dedup-drop] store=${JSON.stringify(c.store)} amt=${c.amount} code=${c.code ?? "null"} key=${key}`);
+      // Counts only: never log a card's code, store or amount (server logs are kept by the host).
+      console.log(`[scan][dedup-drop] hasCode=${Boolean(c.code)}`);
       return false;
     }
     seen.add(key);
     return true;
   });
-  console.log(`[scan] found=${found.length} afterDedup=${cards.length} → ${cards.map((c) => `${c.store}:$${c.amount}`).join(", ")}`);
+  console.log(`[scan] found=${found.length} afterDedup=${cards.length}`);
   cards.sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0));
 
   // Redemption-evidence pass. Default is honest: no evidence → "available". Never guess.
