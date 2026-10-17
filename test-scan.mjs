@@ -12,15 +12,45 @@ const BASE = "http://localhost:3000";
 // ——— Layer 1: query approximations (Gmail tokenizes; substring match is close enough to reveal gaps) ———
 const PASS1 = ["gift card", "giftcard", "egift", "e-gift", "gift certificate", "digital gift", "redemption code"];
 const NEGATIVE = ["you sent", "was received", "buy a gift card", "extra value"];
-// Pass 2 — eGift delivery channels: known platform domains + gifting subject shapes.
+// Pass 2 — eGift delivery channels. Mirrors QUERY2 in app/api/scan/route.ts: gift-card platforms (any mail),
+// retailers that send eGifts (only with a gift word in the SUBJECT), gifting subject shapes, and a bare
+// "sent you" subject only when the email mentions a gift.
 const DOMAINS = ["cashstar.com", "giftcards.com", "giftcardmall.com", "wgiftcard.com", "sendoso.com", "tangocard.com", "tremendous.com", "egifter.com", "giftrocket.com", "prezzee.com", "vanillagift.com", "gyft.com", "giftbit.com"];
-const SHAPES = ["sent you", "gifted you", "a gift for you", "your gift is", "you received a gift", "you've received a gift"];
+const RETAILERS = ["nike.com", "nikemail.com", "adidas.com", "lululemon.com", "sephora.com", "nordstrom.com", "bestbuy.com", "doordash.com", "ubereats.com", "airbnb.com"];
+const SHAPES = ["gifted you", "a gift for you", "your gift is", "you received a gift", "you've received a gift", "gift card is here", "here is your gift"];
+// Mirrors SWEEP_QUERY: redemption phrases, only alongside gift-card wording.
+const GIFT_CARD_WORDS = ["gift card", "giftcard", "egift", "e-gift", "gift certificate"];
+const SWEEP = ["has been applied to your", "was applied to your", "applied to your balance", "has been added to your", "gift card was redeemed", "gift card has been redeemed", "successfully redeemed"];
 
 const negative = (text) => NEGATIVE.some((k) => text.toLowerCase().includes(k));
 const coveredPass1 = (c) => PASS1.some((k) => `${c.subject} ${c.body}`.toLowerCase().includes(k)) && !negative(`${c.subject} ${c.body}`);
-const coveredPass2 = (c) =>
-  (DOMAINS.some((d) => (c.from ?? "").toLowerCase().includes(d)) || SHAPES.some((s) => c.subject.toLowerCase().includes(s))) &&
-  !negative(`${c.subject} ${c.body}`);
+const coveredPass2 = (c) => {
+  const from = (c.from ?? "").toLowerCase();
+  const subj = c.subject.toLowerCase();
+  const text = `${subj} ${c.body.toLowerCase()}`;
+  const hit =
+    DOMAINS.some((d) => from.includes(d)) ||
+    (RETAILERS.some((d) => from.includes(d)) && subj.includes("gift")) ||
+    SHAPES.some((s) => subj.includes(s)) ||
+    (subj.includes("sent you") && text.includes("gift"));
+  return hit && !negative(text);
+};
+const coveredSweep = (c) => {
+  const text = `${c.subject} ${c.body}`.toLowerCase();
+  return GIFT_CARD_WORDS.some((k) => text.includes(k)) && SWEEP.some((k) => text.includes(k));
+};
+
+// ——— Layer 1b: privacy. The site promises only gift-card emails are opened, so none of these may be
+// surfaced by any search (pass 1, pass 2, or the redemption sweep). ———
+const PRIVACY = [
+  { label: "DoorDash food receipt", from: "DoorDash <no-reply@doordash.com>", subject: "Your order from Chipotle", body: "Order total $18.40. Delivered to 123 Main St, Apt 4. Thanks for ordering!" },
+  { label: "Nike order confirmation", from: "Nike <nike@notifications.nike.com>", subject: "Thanks for your order", body: "We got your order! Air Max 90, size 10, $120.00. Shipping to 123 Main St." },
+  { label: "Sephora marketing email", from: "Sephora <sephora@beauty.sephora.com>", subject: "20% off this weekend only", body: "Save on your favorite brands. Spend $50 and get free shipping." },
+  { label: "Cash App payment", from: "Cash App <cash@square.com>", subject: "Alex sent you $25", body: "Alex sent you $25 for pizza. The money is in your Cash App balance." },
+  { label: "Google Drive share", from: "Google Drive <drive-shares-noreply@google.com>", subject: "Jamie sent you a document", body: "Jamie shared Budget 2026 with you. Open in Docs." },
+  { label: "Credit card payment posted", from: "Chase <no-reply@chase.com>", subject: "Your payment was received", body: "Your payment of $200.00 has been applied to your balance. Current balance: $1,240.15." },
+];
+const surfaced = (c) => coveredPass1(c) || coveredPass2(c) || coveredSweep(c);
 
 // ——— Layer 2 cases. expect.kind: "card" (real, owned) | "promo" | "notyours" | "outofscope" (all three = reject) ———
 const CASES = [
@@ -49,6 +79,26 @@ const CASES = [
   // —— TRUE-POSITIVE GUARD: a real Amazon eGift DELIVERED to the user WITH a claim code must still be FOUND ——
   { label: "Amazon eGift DELIVERED to user + claim code, 'order' in footer (real)", from: "gc-orders@gc.email.amazon.com", subject: "An Amazon.com Gift Card is here for you", body: "Hi Jordan, You've received a $100.00 Amazon.com Gift Card! Claim code: 5XPT-9KH2QL-4WER. Apply it to your account at amazon.com/redeem. (Order reference 113-555 in the footer.)", expect: { kind: "card", amount: 100 } },
 ];
+
+// COVERAGE_ONLY=1 node test-scan.mjs  → search-coverage checks only (no dev server or API key needed).
+if (process.env.COVERAGE_ONLY) {
+  console.log("\n  Layer 1 — real cards the searches must surface:");
+  const missed = [];
+  for (const c of CASES.filter((x) => x.expect.kind === "card")) {
+    const ok = coveredPass1(c) || coveredPass2(c);
+    if (!ok) missed.push(c.label);
+    console.log(`  ${ok ? "OK  " : "MISS"} ${c.label}`);
+  }
+  console.log("\n  Layer 1b — non-gift-card emails the searches must NOT open:");
+  const leaked = [];
+  for (const c of PRIVACY) {
+    const hit = surfaced(c);
+    if (hit) leaked.push(c.label);
+    console.log(`  ${hit ? "LEAK" : "OK  "} ${c.label}`);
+  }
+  console.log(`\n  real cards missed: ${missed.length}   ·   non-gift emails opened: ${leaked.length}`);
+  process.exit(missed.length || leaked.length ? 1 : 0);
+}
 
 const isReal = (k) => k === "card";
 

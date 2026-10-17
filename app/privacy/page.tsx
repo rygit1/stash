@@ -52,8 +52,10 @@ export default function PrivacyPage() {
         </p>
         <ul className="list-disc space-y-1 pl-5">
           <li>
-            It searches your mailbox for emails that look like gift cards, eGift deliveries, gift card balances and
-            redemption receipts. Other emails are never opened.
+            It searches your mailbox only for emails about gift cards: ones that mention a gift card, eGift or gift
+            certificate, gift deliveries from gift card services, and gift card balance or redemption notices. From
+            stores that also send eGifts, it only looks at emails whose subject mentions a gift. Receipts, order
+            confirmations, ads and all other emails are never opened.
           </li>
           <li>
             From each matching email it reads the sender, date, subject and message text, and finds the store, amount,

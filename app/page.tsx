@@ -946,9 +946,9 @@ function Landing({
           <div className="reveal mt-12 grid gap-5 sm:grid-cols-2">
             {[
               { icon: "🔒", title: "Read-only, always", body: "Google itself enforces it. Stash can read to find your cards, but it can never send, delete, or change a single thing in your inbox." },
-              { icon: "🎯", title: "Only gift cards", body: "We search for gift-card emails and nothing else, and only those are read, by our AI, to pull out the card details. The rest of your inbox is never opened." },
+              { icon: "🎯", title: "Only gift cards", body: "Stash only opens emails about gift cards, and our AI reads them just to pull out the card details. Receipts, ads and everything else in your inbox are never opened." },
               { icon: "📱", title: "Stored on your device", body: "Your cards live in your browser, on your device, not on our servers. We keep no copy and build no profile on you." },
-              { icon: "🔐", title: "Encrypted & revocable", body: "Every connection is encrypted in transit (TLS), and you can disconnect or revoke access from your Google account in one tap." },
+              { icon: "🔐", title: "Encrypted in transit & revocable", body: "Every connection is encrypted in transit (TLS). Tap Disconnect Gmail in your wallet to revoke Stash's access instantly, or remove it from your Google account." },
             ].map((p) => (
               <div key={p.title} className="rounded-2xl border border-zinc-200/80 bg-white p-6">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-xl">{p.icon}</div>
