@@ -17,11 +17,17 @@ const QUERY =
   `-"you sent" -"was received" -"buy a gift card" -"extra value"`;
 
 // Pass 2 — brand-less peer eGifts ("Maria sent you $25") never say "gift card", so keywords can't see them.
-// Target the DELIVERY channel instead: known eGift platforms + gifting subject shapes. Haiku still judges every hit.
+// Target the DELIVERY channel instead. Haiku still judges every hit. Kept narrow on purpose: the site
+// promises only gift-card emails are opened, so every branch must be about a gift.
+//   - gift-card platforms: everything they send is a gift delivery
+//   - retailers that send eGifts: only when the SUBJECT mentions a gift (never receipts or ads)
+//   - gifting subject shapes; a bare "sent you" (Cash App, Drive shares) also needs a gift word
+const GIFT_WORDS = `(gift OR gifts OR egift OR "e-gift" OR giftcard)`;
 const QUERY2 =
-  `(from:(cashstar.com OR giftcards.com OR giftcardmall.com OR wgiftcard.com OR sendoso.com OR tangocard.com OR tremendous.com OR egifter.com OR giftrocket.com OR prezzee.com OR vanillagift.com OR gyft.com OR giftbit.com ` +
-  `OR nike.com OR nikemail.com OR adidas.com OR lululemon.com OR sephora.com OR nordstrom.com OR bestbuy.com OR doordash.com OR ubereats.com OR airbnb.com) ` +
-  `OR subject:("sent you" OR "gifted you" OR "a gift for you" OR "your gift is" OR "you received a gift" OR "you've received a gift" OR "gift card is here" OR "here is your gift")) ` +
+  `(from:(cashstar.com OR giftcards.com OR giftcardmall.com OR wgiftcard.com OR sendoso.com OR tangocard.com OR tremendous.com OR egifter.com OR giftrocket.com OR prezzee.com OR vanillagift.com OR gyft.com OR giftbit.com) ` +
+  `OR (from:(nike.com OR nikemail.com OR adidas.com OR lululemon.com OR sephora.com OR nordstrom.com OR bestbuy.com OR doordash.com OR ubereats.com OR airbnb.com) subject:${GIFT_WORDS}) ` +
+  `OR subject:("gifted you" OR "a gift for you" OR "your gift is" OR "you received a gift" OR "you've received a gift" OR "gift card is here" OR "here is your gift") ` +
+  `OR (subject:"sent you" ${GIFT_WORDS})) ` +
   `-"you sent" -"was received" -"buy a gift card" -"extra value"`;
 
 const CAP_IDS = 700; // how deep we page through matches (pass 1) — all-time, up to 700 newest
@@ -43,9 +49,11 @@ const EXTRACT_UNTIL_MS = 46_000; // stop starting more model calls
 const EVIDENCE_UNTIL_MS = 54_000; // stop the used/balance follow-up searches (cards then stay "available")
 
 // One Gmail sweep for redemption receipts (Strategy B).
+// Gift-card wording required, so payment and bank emails ("applied to your balance") are never opened.
+const GIFT_CARD_WORDS = `("gift card" OR giftcard OR egift OR "e-gift" OR "gift certificate")`;
 const SWEEP_QUERY =
-  `"has been applied to your" OR "was applied to your" OR "applied to your balance" OR ` +
-  `"has been added to your" OR "gift card was redeemed" OR "gift card has been redeemed" OR "successfully redeemed"`;
+  `${GIFT_CARD_WORDS} ("has been applied to your" OR "was applied to your" OR "applied to your balance" OR ` +
+  `"has been added to your" OR "gift card was redeemed" OR "gift card has been redeemed" OR "successfully redeemed")`;
 
 // Balance-receipt search terms (balance pass) — explicit statements only; the regex in lib/extract does the judging.
 const BAL_TERMS = `("new balance" OR "remaining balance" OR "gift card balance" OR "balance remaining" OR "current balance" OR "balance is now")`;
@@ -303,7 +311,7 @@ export async function POST(req: Request) {
     const searchable = out.filter((c) => storeToken(c.store)).slice(0, CAP_BALANCE_CARDS);
     await pool(searchable, CONCURRENCY, async (c) => {
       try {
-        for (const id of await searchMessages(token, `"${storeToken(c.store)!}" ${BAL_TERMS}`, CAP_BALANCE_IDS, evidenceDeadline)) balIds.add(id);
+        for (const id of await searchMessages(token, `"${storeToken(c.store)!}" ${GIFT_CARD_WORDS} ${BAL_TERMS}`, CAP_BALANCE_IDS, evidenceDeadline)) balIds.add(id);
       } catch {
         /* narrow search is best-effort */
       }
