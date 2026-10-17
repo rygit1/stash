@@ -559,7 +559,7 @@ const FEATURES: Feature[] = [
   { icon: "📸", title: "Scan plastic cards", body: "Point your camera. It auto-captures when the shot is clear and reads the number off the barcode." },
   { icon: "⚡", title: "Fetches your real balance", body: "An agent checks the merchant for you, Nike, Starbucks, so there's nothing to type." },
   { icon: "✅", title: "Knows what you've used", body: "Spots redeemed cards from your receipts, so the total you see is honest." },
-  { icon: "⏰", title: "Never lose one to expiry", body: "Countdowns and reminders before a card expires, the deadline companies hope you miss." },
+  { icon: "⏰", title: "Never lose one to expiration", body: "Countdowns and reminders before a card expires, the deadline companies hope you miss." },
   { icon: "🧠", title: "Learns what's yours", body: "Tap “not mine” once and Stash filters that pattern forever." },
 ];
 
