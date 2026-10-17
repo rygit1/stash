@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { connection } from "next/server";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,11 +18,14 @@ export const metadata: Metadata = {
   description: "Connect your email and find every gift card you forgot about — before it's gone.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Render per request so Next.js can stamp proxy.ts's CSP nonce on its scripts.
+  // A page built ahead of time has no nonce, and the CSP would block its scripts.
+  await connection();
   return (
     <html
       lang="en"
