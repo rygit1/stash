@@ -26,3 +26,23 @@ export function merchantAction(store: string | null, code: string | null): { lab
     url: `https://www.google.com/search?q=${encodeURIComponent(`${store ?? "gift card"} check gift card balance`)}`,
   };
 }
+
+// Cards you can't take into a shop: online-only brands and bank-network cards (usable anywhere).
+// For these there's no "nearest store", so the Find-nearby link is hidden.
+const ONLINE_ONLY = [
+  "amazon", "roblox", "nift", "gonift", "itunes", "app store", "google play", "steam", "xbox", "playstation",
+  "nintendo", "netflix", "spotify", "hulu", "disney+", "doordash", "uber", "lyft", "grubhub", "instacart",
+  "airbnb", "ebay", "etsy", "visa", "mastercard", "amex", "american express", "discover", "tremendous",
+  "tango", "prezzee", "giftcards.com", "giftcardmall", "egifter", "giftrocket", "gyft", "giftbit",
+];
+
+// A maps search for the nearest location of this store. The phone's own maps app works out where the
+// person is, so Stash never sees their location. null = generic or online-only card, nothing to find.
+export function nearbyMapsUrl(store: string | null, apple: boolean): string | null {
+  const name = (store ?? "").trim();
+  const s = name.toLowerCase();
+  if (!name || s === "gift card" || ONLINE_ONLY.some((k) => s.includes(k))) return null;
+  return apple
+    ? `https://maps.apple.com/?q=${encodeURIComponent(name)}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
+}
