@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stash — find your forgotten gift cards",
+  title: "Stash",
   description: "Connect your email and find every gift card you forgot about — before it's gone.",
 };
 
