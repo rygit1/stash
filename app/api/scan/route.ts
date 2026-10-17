@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { rateLimit } from "@/lib/ratelimit";
 import { searchMessages, getMessage } from "@/lib/gmail";
 import { extractCard, hasRedemption, amountRe, storeToken, tieBalance, type ExtractedCard, type EvidenceMsg } from "@/lib/extract";
 
@@ -129,7 +130,16 @@ async function pool<T>(items: T[], n: number, fn: (item: T) => Promise<void>, de
   return cutOff;
 }
 
-export async function GET() {
+// POST only: a scan reads Gmail and spends Anthropic credits (~8 cents), so it must not be
+// triggerable by a plain link or another site (the session cookie is sameSite=lax, which a
+// cross-site POST doesn't carry). Rate-limited per IP so a loop can't run up the bill.
+const SCANS_PER_WINDOW = 5;
+const SCAN_WINDOW_MS = 10 * 60_000;
+
+export async function POST(req: Request) {
+  const limited = rateLimit(req, "scan", SCANS_PER_WINDOW, SCAN_WINDOW_MS);
+  if (limited) return limited;
+
   const t0 = Date.now();
   const fetchDeadline = t0 + FETCH_UNTIL_MS;
   const extractDeadline = t0 + EXTRACT_UNTIL_MS;

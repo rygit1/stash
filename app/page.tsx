@@ -468,7 +468,12 @@ export default function Home() {
     resolveSeen.current = new Set();
     setResolveStatus({});
     try {
-      const r = await fetch("/api/scan", { cache: "no-store" });
+      const r = await fetch("/api/scan", { method: "POST", cache: "no-store" });
+      if (r.status === 429) {
+        setError("rate_limited");
+        setStage("error");
+        return;
+      }
       if (r.status === 401) {
         setError("not_connected");
         setStage("error");
@@ -3110,11 +3115,13 @@ function ErrorView({ error }: { error: string | null }) {
         ? "Google credentials aren't wired up yet."
         : error === "scan_failed"
           ? "The scan hit a snag. Try reconnecting."
-          : "Something went wrong.";
+          : error === "rate_limited"
+            ? "You've run a lot of scans in a short time. Wait a few minutes, then try again."
+            : "Something went wrong.";
   return (
     <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
-      <div className="text-5xl">🔌</div>
-      <p className="mt-4 text-xl font-semibold text-zinc-900">Not connected</p>
+      <div className="text-5xl">{error === "rate_limited" ? "⏳" : "🔌"}</div>
+      <p className="mt-4 text-xl font-semibold text-zinc-900">{error === "rate_limited" ? "Slow down a sec" : "Not connected"}</p>
       <p className="mt-2 max-w-xs text-sm text-zinc-500">{msg}</p>
       <a href="/api/google/start" className="mt-6 flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 text-base font-semibold text-white">
         <GoogleIcon /> Connect Gmail
