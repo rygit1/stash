@@ -4,6 +4,7 @@
 
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
+const REVOKE_URL = "https://oauth2.googleapis.com/revoke";
 const SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 
 const redirectUri = (origin: string) => `${origin}/api/google/callback`;
@@ -35,6 +36,17 @@ export async function exchangeCode(code: string, origin: string): Promise<{ acce
   const r = await fetch(TOKEN_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
   if (!r.ok) throw new Error(`token exchange ${r.status}: ${await r.text()}`);
   return r.json();
+}
+
+// Revoke the access token at Google, so Stash can no longer read the inbox. Google answers 400 for
+// a token that is already expired or revoked; either way the access is gone, so that counts too.
+export async function revokeToken(token: string): Promise<boolean> {
+  const r = await fetch(REVOKE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ token }),
+  });
+  return r.ok || r.status === 400;
 }
 
 // The connected account's own email — so the balance agent authenticates as whoever's inbox

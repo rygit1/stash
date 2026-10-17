@@ -955,6 +955,45 @@ function Scanning() {
   );
 }
 
+// "Disconnect Gmail": revokes Stash's access at Google and clears the session cookie. Cards
+// already in the wallet stay on this device; "Clear all gift cards" removes those.
+function DisconnectGmail({ className = "" }: { className?: string }) {
+  const [state, setState] = useState<"idle" | "working" | "done" | "failed">("idle");
+  async function disconnect() {
+    setState("working");
+    try {
+      const r = await fetch("/api/google/disconnect", { method: "POST" });
+      const d = r.ok ? await r.json() : null;
+      setState(d?.revoked ? "done" : "failed");
+    } catch {
+      setState("failed");
+    }
+  }
+  if (state === "done") {
+    return <p className={`text-center text-xs text-zinc-500 ${className}`}>✓ Gmail disconnected. Stash can no longer read your inbox.</p>;
+  }
+  if (state === "failed") {
+    return (
+      <p className={`text-center text-xs text-zinc-500 ${className}`}>
+        Signed out here, but Google didn&rsquo;t confirm. To be sure, remove Stash at{" "}
+        <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="underline">
+          myaccount.google.com/permissions
+        </a>
+        .
+      </p>
+    );
+  }
+  return (
+    <button
+      onClick={disconnect}
+      disabled={state === "working"}
+      className={`mx-auto text-xs font-medium text-zinc-400 transition hover:text-zinc-600 disabled:opacity-50 ${className}`}
+    >
+      {state === "working" ? "Disconnecting…" : "🔌 Disconnect Gmail"}
+    </button>
+  );
+}
+
 function Wallet({
   cards,
   stats,
@@ -1213,6 +1252,7 @@ function Wallet({
         <a href="/api/google/start" className="mt-6 text-sm font-semibold text-emerald-600">
           {emailScanned ? "Scan again →" : "Connect Gmail →"}
         </a>
+        {emailScanned && <DisconnectGmail className="mt-3" />}
         {physical.length > 0 && (
           <button
             onClick={() => setViewStash(true)}
@@ -1449,6 +1489,7 @@ function Wallet({
       <a href="/api/google/start" className="mt-3 text-center text-xs text-zinc-300 transition hover:text-zinc-500">
         re-scan
       </a>
+      {emailScanned && <DisconnectGmail className="mt-2" />}
 
       {/* Clear all, two-step destructive wipe of every saved card on this device. */}
       <div className="mt-10 border-t border-zinc-100 pt-5">
