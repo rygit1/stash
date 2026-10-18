@@ -598,7 +598,7 @@ export default function Home() {
 // The Stash mark: a green "$" card fanned over two outlined cards.
 function StashGlyph({ className = "h-8 w-9" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 44 38" className={className} aria-hidden="true">
+    <svg viewBox="0 0 44 41" className={className} aria-hidden="true">
       <g fill="#ffffff" stroke="#1c1c1e" strokeWidth={1.4} strokeLinejoin="round">
         <rect x="19" y="3" width="19" height="27" rx="2.4" transform="rotate(-34 35 30)" />
         <rect x="19" y="3" width="19" height="27" rx="2.4" transform="rotate(-17 35 30)" />
