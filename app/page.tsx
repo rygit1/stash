@@ -422,8 +422,15 @@ export default function Home() {
     if (stats) persistStash(cards, stats);
   }, [cards, stats]);
 
+  // A payout moment for the wallet to celebrate: confetti, plus the "You took back $X" banner when
+  // there's an amount. Set by a finished scan or an added plastic card; cleared when someone just
+  // opens their wallet, so reopening it never replays an old celebration.
+  const [celebration, setCelebration] = useState<{ id: number; amount: number } | null>(null);
+  const celebrate = (amount: number) => setCelebration({ id: Date.now(), amount });
+
   // Upsert + dedupe by code: re-scanning the same plastic card replaces it, never doubles it.
   const addPhysical = (card: PhysicalCard) => {
+    celebrate(card.amount ?? 0);
     setPhysical((prev) => {
       const k = normCode(card.code);
       const rest = k.length >= 4 ? prev.filter((p) => normCode(p.code) !== k) : prev;
@@ -486,8 +493,7 @@ export default function Home() {
       }
       const data = await r.json();
       type Raw = { id: string; store: string | null; amount: number | null; code: string | null; pin: string | null; expires: string | null; dateReceived: string | null; status: "available" | "likely_used"; evidenceId: string | null; balanceEstimate: number | null; balanceAsOf: string | null; balanceEvidenceId: string | null; redeemUrl: string | null; sig: CardSig | null };
-      setCards(
-        (data.cards as Raw[]).map((c) => ({
+      const found: Found[] = (data.cards as Raw[]).map((c) => ({
           id: c.id,
           store: c.store ?? "Gift card",
           amount: c.amount ?? 0,
@@ -504,10 +510,13 @@ export default function Home() {
           redeemUrl: c.redeemUrl ?? null,
           sig: c.sig ?? null,
           ...brandFor(c.store),
-        })),
-      );
+        }));
+      setCards(found);
       setStats(data.stats);
       setStage("wallet");
+      // Confetti for every scan that turns up cards (an empty inbox gets its own result screen).
+      const foundTotal = found.filter((c) => c.status === "available").reduce((sum, c) => sum + worth(c), 0);
+      if (found.length > 0) setCelebration({ id: Date.now(), amount: foundTotal });
     } catch {
       setError("scan_failed");
       setStage("error");
@@ -566,7 +575,10 @@ export default function Home() {
     return (
       <Landing
         physicalCount={physical.length + cards.length}
-        onOpenWallet={() => setStage("wallet")}
+        onOpenWallet={() => {
+          setCelebration(null);
+          setStage("wallet");
+        }}
         onAddPhysical={(c) => {
           addPhysical(c);
           setStage("wallet");
@@ -586,6 +598,7 @@ export default function Home() {
           onAddPhysical={addPhysical}
           resolveStatus={resolveStatus}
           onResolveCode={mergeResolvedCode}
+          celebration={celebration}
         />
       )}
       {stage === "error" && <ErrorView error={error} />}
@@ -1116,6 +1129,7 @@ function Wallet({
   onAddPhysical,
   resolveStatus,
   onResolveCode,
+  celebration,
 }: {
   cards: Found[];
   stats: Stats | null;
@@ -1123,6 +1137,7 @@ function Wallet({
   onAddPhysical: (c: PhysicalCard) => void;
   resolveStatus: Record<string, ResolvePhase>;
   onResolveCode: (id: string, cardNumber: string | null, pin: string | null) => void;
+  celebration: { id: number; amount: number } | null;
 }) {
   // localStorage is the final authority on used/available, it overrides server status both ways.
   const [overrides, setOverrides] = useState<Record<string, "used" | "available">>(() => {
@@ -1324,23 +1339,17 @@ function Wallet({
 
   const [confetti, setConfetti] = useState(false);
   const [celebrateAmt, setCelebrateAmt] = useState<number | null>(null); // non-motion fallback banner, always lands
-  const fired = useRef(false);
-  // Cards arrive async after mount (total: 0 → >0), so this effect must catch that transition.
-  // Fires exactly once via the ref; the celebrate banner guarantees a payout beat even when
-  // confetti is suppressed by prefers-reduced-motion.
-  useEffect(() => {
-    if (fired.current || total <= 0) return;
-    fired.current = true;
+  // Play each celebration once: after a scan that found cards, or when a plastic card is added
+  // (here or from the homepage). Adjusting state while rendering is React's pattern for reacting
+  // to a changed prop. The banner keeps the payout beat even when confetti is skipped for
+  // prefers-reduced-motion.
+  const [playedId, setPlayedId] = useState<number | null>(null);
+  if (celebration && celebration.id !== playedId) {
+    setPlayedId(celebration.id);
     setConfetti(true);
-    setCelebrateAmt(total);
-  }, [total]);
-
-  // Adding a plastic card is a payout moment too.
-  const handleAddPhysical = (c: PhysicalCard) => {
-    onAddPhysical(c);
-    setConfetti(true);
-    setCelebrateAmt((adjustedP(c) ?? c.amount) ?? total);
-  };
+    if (celebration.amount > 0) setCelebrateAmt(celebration.amount);
+  }
+  const handleAddPhysical = onAddPhysical;
 
   // The dedicated "mailbox" result screen: an email scan ran and found no owned cards → show the
   // inbox stats ONLY, never a plastic card (those are a separate wallet view, reached via the link
