@@ -126,8 +126,9 @@ export default function PrivacyPage() {
           token for your scan. It expires within about an hour, or immediately when you disconnect.
         </p>
         <p>
-          <strong>Plastic card scanning</strong> uses your camera only while the scanner is open. The barcode is read on
-          your device, and the photo is not sent to us.
+          <strong>Plastic card scanning</strong> uses your camera only while the scanner is open. The barcode, or the
+          printed card number and PIN when there&rsquo;s no barcode, is read on your device. The photo is not sent to
+          us or to anyone else.
         </p>
       </Section>
 

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { merchantAction, nearbyMapsUrl } from "@/lib/merchants";
 import { decodeCardBarcode, frameQuality } from "@/lib/barcode";
+import { readCardText } from "@/lib/cardOcr";
 import { code128Svg } from "@/lib/barcode128";
 
 type Found = {
@@ -2149,6 +2150,7 @@ function PlasticScanner({
   const [shaky, setShaky] = useState<Record<string, boolean>>({});
   // True when the card reader could not be reached and the on-device barcode carried the scan.
   const [readerDown, setReaderDown] = useState(false);
+  const [readingText, setReadingText] = useState(false); // on-device text recognition running
   const [saving, setSaving] = useState(false);
   const [shots, setShots] = useState<string[]>([]); // [front] or [front, back], front is always the card face
   const [barcode, setBarcode] = useState<string | null>(null); // exact code read off a barcode/QR in any shot
@@ -2353,15 +2355,35 @@ function PlasticScanner({
     setPreview(nextShots[0]);
 
     // THE BARCODE IS READ ON THIS DEVICE: free, offline, no key, and exact when it hits.
-    // It is the only reader now. Store, value and PIN are always typed in on the confirm screen.
     const decodedRaw = await decodeCardBarcode(dataUrl);
     const decoded = decodedRaw ?? (nextShots.length > 1 ? barcode : null);
     setBarcode(decoded);
 
-    // No barcode: straight to the confirm screen with empty boxes to type in.
+    // No barcode: read the printed number (and PIN / store when visible) with on-device text
+    // recognition, also on this device. It can misread, so whatever it fills is flagged amber.
+    // On the back side, keep what the front shot (or the person) already filled in.
     if (!decoded) {
-      setStore(""); setCode(""); setPin(""); setAmount(""); setExpires("");
-      setShaky({}); setReaderDown(false); setPhase("confirm");
+      const isBack = nextShots.length > 1;
+      if (!isBack) {
+        setStore(""); setCode(""); setPin(""); setAmount(""); setExpires("");
+        setShaky({});
+      }
+      setReaderDown(false);
+      setReadingText(true);
+      const read = await readCardText(dataUrl, Object.keys(BRAND));
+      setReadingText(false);
+      if (read) {
+        if (read.code) setCode((prev) => prev || read.code!);
+        if (read.pin) setPin((prev) => prev || read.pin!);
+        if (read.store) setStore((prev) => prev || read.store!);
+        setShaky((prev) => ({
+          ...prev,
+          code: prev.code || Boolean(read.code),
+          pin: prev.pin || Boolean(read.pin),
+          store: prev.store || Boolean(read.store),
+        }));
+      }
+      setPhase("confirm");
       return;
     }
 
@@ -2460,7 +2482,7 @@ function PlasticScanner({
               {phase === "reading" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/60">
                   <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-emerald-100 border-t-emerald-500" />
-                  <p className="text-sm font-semibold text-zinc-700">Reading card…</p>
+                  <p className="text-sm font-semibold text-zinc-700">{readingText ? "Reading the printed number…" : "Reading card…"}</p>
                 </div>
               )}
             </div>
@@ -2503,8 +2525,8 @@ function PlasticScanner({
               <div className="mt-4 flex flex-col gap-3">
                 {readerDown && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] leading-relaxed text-amber-800">
-                    <span className="font-semibold">Read the number straight off the barcode.</span> The part that reads
-                    the store name and value was unreachable, so fill those in yourself below.
+                    <span className="font-semibold">Read the number straight off the barcode.</span> Fill in the store and
+                    value yourself below.
                   </div>
                 )}
                 <p className="text-xs text-zinc-400">

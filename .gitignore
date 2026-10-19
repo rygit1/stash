@@ -43,3 +43,6 @@ next-env.d.ts
 # real gift cards: these two scripts screenshot a REAL card's number and PIN when a check succeeds
 spike-balance/evidence/*-reveal-success.png
 spike-balance/evidence/starbucks-balance.png
+
+# on-device OCR engine, copied from node_modules by scripts/copy-ocr-assets.mjs
+/public/tesseract/
