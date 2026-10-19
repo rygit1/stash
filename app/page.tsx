@@ -51,6 +51,16 @@ const normCode = (s: string | null) => (s ?? "").toLowerCase().replace(/[^a-z0-9
 // (the same card found twice shares one log), falling back to the card's id.
 type SpendEntry = { amount: number; at: string };
 const SPEND_KEY = "loot_spend_v1";
+// A balance the person read off the store's own balance page and typed in: the exact amount on the
+// day they checked. Purchases logged after that date are taken off it.
+type CheckedBalance = { amount: number; at: string };
+const CHECKED_KEY = "loot_checked_v1";
+const spentSince = (entries: SpendEntry[] | undefined, since?: string) =>
+  (entries ?? []).filter((e) => !since || e.at > since).reduce((s, e) => s + e.amount, 0);
+const fmtChecked = (at: string) => {
+  const d = new Date(at);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
 const spendKeyOf = (code: string | null, id: string) => normCode(code) || id;
 
 function loadSpends(): Record<string, SpendEntry[]> {
@@ -191,6 +201,7 @@ const RESET_KEYS = [
   "loot_physical_v1", // scanned plastic cards
   "loot_used", // used/available overrides
   "loot_spend_v1", // manual spend log
+  "loot_checked_v1", // balances the person checked on the store's site
   "loot_stash_v1", // last email-scan snapshot
   "loot_stash_celebrated", // celebration dedupe
   "loot_notmine_v1", // "not mine" taught patterns
@@ -1203,16 +1214,48 @@ function Wallet({
       return saveSpends(next);
     });
 
+  // Balances checked on the store's site, keyed like spends. localStorage is the authority.
+  const [checked, setCheckedMap] = useState<Record<string, CheckedBalance>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      return JSON.parse(localStorage.getItem(CHECKED_KEY) ?? "{}");
+    } catch {
+      return {};
+    }
+  });
+  const setCheckedBalance = (key: string, amount: number) =>
+    setCheckedMap((prev) => {
+      const next = { ...prev, [key]: { amount, at: new Date().toISOString() } };
+      try {
+        localStorage.setItem(CHECKED_KEY, JSON.stringify(next));
+      } catch {
+        /* private mode, session-only */
+      }
+      return next;
+    });
+
   const spendKey = (c: Found) => spendKeyOf(c.code, c.id);
   const spendKeyP = (p: PhysicalCard) => spendKeyOf(p.code, p.id);
   const spentOf = (key: string) => (spends[key] ?? []).reduce((s, e) => s + e.amount, 0);
-  // A card's honest value after the purchases the user logged against it.
-  const adjusted = (c: Found) => Math.max(0, worth(c) - spentOf(spendKey(c)));
-  const adjustedP = (p: PhysicalCard) => (p.amount === null ? null : Math.max(0, p.amount - spentOf(spendKeyP(p))));
-  // Spent down: logged purchases ate the whole balance, reads as used, undone by clearing the log.
-  const isSpentDown = (c: Found) => !isUsed(c) && worth(c) > 0 && spentOf(spendKey(c)) > 0 && adjusted(c) === 0;
+  // A card's honest value: the balance checked on the store's site when there is one (minus purchases
+  // logged since), otherwise the email / printed value minus every logged purchase.
+  const adjusted = (c: Found) => {
+    const ch = checked[spendKey(c)];
+    return ch ? Math.max(0, ch.amount - spentSince(spends[spendKey(c)], ch.at)) : Math.max(0, worth(c) - spentOf(spendKey(c)));
+  };
+  const adjustedP = (p: PhysicalCard) => {
+    const ch = checked[spendKeyP(p)];
+    if (ch) return Math.max(0, ch.amount - spentSince(spends[spendKeyP(p)], ch.at));
+    return p.amount === null ? null : Math.max(0, p.amount - spentOf(spendKeyP(p)));
+  };
+  // Spent down: nothing left (logged purchases ate the balance, or the store said $0), reads as used.
+  const isSpentDown = (c: Found) =>
+    !isUsed(c) && (checked[spendKey(c)] ? adjusted(c) === 0 : worth(c) > 0 && spentOf(spendKey(c)) > 0 && adjusted(c) === 0);
   const isSpentDownP = (p: PhysicalCard) =>
-    !isUsedP(p) && p.amount !== null && p.amount > 0 && spentOf(spendKeyP(p)) > 0 && adjustedP(p) === 0;
+    !isUsedP(p) &&
+    (checked[spendKeyP(p)]
+      ? adjustedP(p) === 0
+      : p.amount !== null && p.amount > 0 && spentOf(spendKeyP(p)) > 0 && adjustedP(p) === 0);
 
   // "Not mine", user-taught pattern hiding. Per-user, on-device; localStorage is the authority.
   const [notMine, setNotMine] = useState<NotMineSig[]>(() => {
@@ -1497,6 +1540,8 @@ function Wallet({
                   spends={spends[spendKeyP(it.p)] ?? []}
                   onLogSpend={(amt) => logSpend(spendKeyP(it.p), amt)}
                   onRemoveSpend={(i) => removeSpend(spendKeyP(it.p), i)}
+                  checked={checked[spendKeyP(it.p)]}
+                  onSetBalance={(a) => setCheckedBalance(spendKeyP(it.p), a)}
                 />
               ) : (
                 <CardRow
@@ -1509,6 +1554,8 @@ function Wallet({
                   spends={spends[spendKey(it.c)] ?? []}
                   onLogSpend={(amt) => logSpend(spendKey(it.c), amt)}
                   onRemoveSpend={(i) => removeSpend(spendKey(it.c), i)}
+                  checked={checked[spendKey(it.c)]}
+                  onSetBalance={(a) => setCheckedBalance(spendKey(it.c), a)}
                 />
               ),
             )
@@ -1524,6 +1571,8 @@ function Wallet({
             spends={spends[spendKeyP(p)] ?? []}
             onLogSpend={(amt) => logSpend(spendKeyP(p), amt)}
             onRemoveSpend={(i) => removeSpend(spendKeyP(p), i)}
+                  checked={checked[spendKeyP(p)]}
+                  onSetBalance={(a) => setCheckedBalance(spendKeyP(p), a)}
           />
         ))}
         {avail.map((c) => (
@@ -1537,6 +1586,8 @@ function Wallet({
             spends={spends[spendKey(c)] ?? []}
             onLogSpend={(amt) => logSpend(spendKey(c), amt)}
             onRemoveSpend={(i) => removeSpend(spendKey(c), i)}
+                  checked={checked[spendKey(c)]}
+                  onSetBalance={(a) => setCheckedBalance(spendKey(c), a)}
           />
         ))}
         <PlasticScanner
@@ -1972,12 +2023,16 @@ function PhysicalCardRow({
   spends,
   onLogSpend,
   onRemoveSpend,
+  checked,
+  onSetBalance,
 }: {
   card: PhysicalCard;
   onMarkUsed: () => void;
   spends: SpendEntry[];
   onLogSpend: (amount: number) => void;
   onRemoveSpend: (i: number) => void;
+  checked?: CheckedBalance;
+  onSetBalance: (amount: number) => void;
 }) {
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -1985,7 +2040,8 @@ function PhysicalCardRow({
   const [agentAmount, setAgentAmount] = useState<number | null>(null); // agent-fetched balance (clearly labeled below)
   const action = merchantAction(card.store, card.code);
   const brand = brandFor(card.store);
-  const spent = spends.reduce((s, e) => s + e.amount, 0);
+  const spent = spentSince(spends, checked?.at); // after the last balance check, if any
+  const [asking, setAsking] = useState(false);
   // ⚡ live-check is offered only on localhost, for a card that has BOTH its code AND security code
   // (PIN), AND whose store has an adapter. A physical card can't be checked without its security code.
   const canLiveCheck = isLocalhost() && !!card.code && !!card.pin && physAdapterFor(card.store) !== null;
@@ -2002,6 +2058,7 @@ function PhysicalCardRow({
       }
     }
     window.open(action.url, "_blank", "noopener");
+    if (/check/i.test(action.label)) setAsking(true);
   };
 
   return (
@@ -2053,7 +2110,15 @@ function PhysicalCardRow({
             <ExpiryReminder store={card.store} amount={card.amount} expires={card.expires} />
           </div>
         )}
-        {spent > 0 &&
+        {checked ? (
+          <p className="mb-2 text-sm font-bold tabular-nums text-emerald-600">
+            ${Math.max(0, checked.amount - spent).toFixed(2)} left{" "}
+            <span className="text-[11px] font-medium text-zinc-400">
+              ✓ checked {fmtChecked(checked.at)}
+              {spent > 0 ? `, then $${spent.toFixed(2)} you logged` : ""}
+            </span>
+          </p>
+        ) : spent > 0 &&
           (card.amount !== null ? (
             <p className="mb-2 text-sm font-bold tabular-nums text-emerald-600">
               ${Math.max(0, card.amount - spent).toFixed(2)} left{" "}
@@ -2102,6 +2167,15 @@ function PhysicalCardRow({
         >
           {copied ? "Code copied ✓, opening…" : `${action.label} →`}
         </button>
+        {asking && (
+          <BalanceAsk
+            onSave={(a) => {
+              onSetBalance(a);
+              setAsking(false);
+            }}
+            onCancel={() => setAsking(false)}
+          />
+        )}
         <NearbyLink store={card.store} />
         <SpendFooter spends={spends} onLog={onLogSpend} onRemove={onRemoveSpend} onMarkUsed={onMarkUsed} />
       </div>
@@ -2784,6 +2858,48 @@ function CardBarcode({ code }: { code: string }) {
   );
 }
 
+// After "Check balance" opens the store's balance page: ask what it said, so the card shows the
+// exact, store-confirmed amount. Stash can't read that page itself (stores block automated checks).
+function BalanceAsk({ onSave, onCancel }: { onSave: (amount: number) => void; onCancel: () => void }) {
+  const [value, setValue] = useState("");
+  const parsed = Number.parseFloat(value.replace(/[$,\s]/g, ""));
+  const valid = value.trim() !== "" && Number.isFinite(parsed) && parsed >= 0 && parsed < 100_000;
+  const save = () => {
+    if (valid) onSave(Math.round(parsed * 100) / 100);
+  };
+  return (
+    <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+      <p className="text-sm font-semibold text-emerald-900">What balance did the store show?</p>
+      <div className="mt-2 flex gap-2">
+        <div className="relative flex-1">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">$</span>
+          <input
+            inputMode="decimal"
+            aria-label="Balance the store showed"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") save();
+            }}
+            placeholder="0.00"
+            className="h-10 w-full rounded-lg border border-emerald-200 bg-white pl-6 pr-3 text-base tabular-nums text-zinc-900 outline-none focus:border-emerald-400"
+          />
+        </div>
+        <button
+          onClick={save}
+          disabled={!valid}
+          className="h-10 shrink-0 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white transition active:scale-[0.98] disabled:opacity-40"
+        >
+          Save
+        </button>
+      </div>
+      <button onClick={onCancel} className="mt-1.5 text-[11px] font-medium text-emerald-800/70 hover:text-emerald-900">
+        not now
+      </button>
+    </div>
+  );
+}
+
 // "📍 Find one near me": opens the phone's maps app searching for this store. Apple Maps on Apple
 // devices, Google Maps elsewhere, decided at tap time. Hidden for online-only cards.
 function NearbyLink({ store }: { store: string | null }) {
@@ -2809,6 +2925,8 @@ function CardRow({
   spends,
   onLogSpend,
   onRemoveSpend,
+  checked,
+  onSetBalance,
 }: {
   card: Found;
   resolve?: ResolvePhase; // auto-resolve status for this card (localhost only); undefined = not attempted
@@ -2818,9 +2936,12 @@ function CardRow({
   spends: SpendEntry[];
   onLogSpend: (amount: number) => void;
   onRemoveSpend: (i: number) => void;
+  checked?: CheckedBalance;
+  onSetBalance: (amount: number) => void;
 }) {
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [asking, setAsking] = useState(false);
   const [copiedField, setCopiedField] = useState<"code" | "pin" | null>(null);
   const copyField = async (text: string, field: "code" | "pin") => {
     try {
@@ -2841,8 +2962,8 @@ function CardRow({
     return () => clearTimeout(t);
   }, [resolve]);
   const action = merchantAction(card.store, card.code);
-  const spent = spends.reduce((s, e) => s + e.amount, 0);
-  const shown = Math.max(0, worth(card) - spent);
+  const spent = spentSince(spends, checked?.at); // after the last balance check, if any
+  const shown = Math.max(0, (checked ? checked.amount : worth(card)) - spent);
   // Auto-resolve attempts every card with a redeem link. While it works, show the unlock chip.
   // If it can't resolve (unsupported merchant / failed), the card just keeps its estimate, no
   // button, no error: the headline number is the answer.
@@ -2859,6 +2980,7 @@ function CardRow({
       }
     }
     window.open(action.url, "_blank", "noopener");
+    if (/check/i.test(action.label)) setAsking(true);
   };
 
   return (
@@ -2878,13 +3000,14 @@ function CardRow({
           </div>
           <p className="truncate text-sm text-zinc-400">{card.date ?? "received"}</p>
         </div>
-        {card.balanceEstimate !== null || spent > 0 ? (
+        {checked || card.balanceEstimate !== null || spent > 0 ? (
           <div className="shrink-0 text-right">
             <p className="text-lg font-bold tabular-nums text-emerald-600">
-              {card.balanceEstimate !== null && <>&asymp; </>}${shown.toFixed(2)}
+              {!checked && card.balanceEstimate !== null && <>&asymp; </>}${shown.toFixed(2)}
             </p>
+            {checked && <p className="text-[11px] font-medium text-emerald-700/80">✓ checked {fmtChecked(checked.at)}</p>}
             {spent > 0 && <p className="text-[11px] font-medium text-zinc-400">after ${spent.toFixed(2)} you logged</p>}
-            {card.balanceEvidenceId && (
+            {!checked && card.balanceEvidenceId && (
               <a
                 href={gmailUrl(card.balanceEvidenceId)}
                 target="_blank"
@@ -2965,6 +3088,15 @@ function CardRow({
       >
         {copied ? "Code copied ✓, opening…" : `${action.label} →`}
       </button>
+      {asking && (
+        <BalanceAsk
+          onSave={(a) => {
+            onSetBalance(a);
+            setAsking(false);
+          }}
+          onCancel={() => setAsking(false)}
+        />
+      )}
       <NearbyLink store={card.store} />
       <SpendFooter spends={spends} onLog={onLogSpend} onRemove={onRemoveSpend} onMarkUsed={onMarkUsed} onNotMine={onNotMine} />
     </div>
