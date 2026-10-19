@@ -108,7 +108,8 @@ async function extract(c) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email: c.body, subject: c.subject, from: c.from }),
   });
-  if (!r.ok) return { isGiftCard: false, _err: r.status };
+  // An error is NOT a rejection: report it as one so a dead key or a bad request can't pass as "rejected".
+  if (!r.ok) return { isGiftCard: false, _err: `HTTP ${r.status} ${(await r.text()).slice(0, 160)}` };
   return r.json();
 }
 
@@ -188,6 +189,7 @@ function stripAsOf(v) {
 
 // ——— Run ———
 const silentMiss = [];
+const errors = [];
 const extractionMiss = [];
 let tp = 0, fn = 0, fp = 0, tn = 0;
 
@@ -197,6 +199,11 @@ for (const c of CASES) {
   const q1 = coveredPass1(c);
   const q2 = coveredPass2(c);
   const d = await extract(c);
+  if (d._err) {
+    errors.push(`${c.label} → ${d._err}`);
+    console.log(`  ${c.label.padEnd(49).slice(0, 49)} | ${q1 ? "✓" : "·"}  ${q2 ? "✓" : "·"}  | ‼ ERROR  ${d._err.slice(0, 40)}`);
+    continue;
+  }
   const gotReal = !!d.isGiftCard;
   const wantReal = isReal(c.expect.kind);
   const amtOK = !wantReal || Math.abs((d.amount ?? 0) - c.expect.amount) < 0.005;
@@ -226,12 +233,16 @@ for (const t of DET) {
   console.log(`  ${t.label.padEnd(76).slice(0, 76)} | ${ok ? "OK" : "‼ FAIL"}`);
 }
 
-const mismatches = extractionMiss.length + detMiss.length + silentMiss.length;
+const mismatches = extractionMiss.length + detMiss.length + silentMiss.length + errors.length;
 console.log("\n  ── SUMMARY ─────────────────────────────────────────");
 console.log(`  Cases: ${CASES.length} extraction + ${DET.length} deterministic = ${CASES.length + DET.length}   ·   mismatches: ${mismatches}`);
 console.log(`  Extraction recall ${tp}/${tp + fn} (${((100 * tp) / (tp + fn)).toFixed(0)}%)   precision ${tp}/${tp + fp} (${((100 * tp) / (tp + fp)).toFixed(0)}%)   promos rejected ${tn}/${tn + fp}`);
 console.log(`  Real cards NEITHER search pass would surface (${silentMiss.length}):`);
 silentMiss.forEach((m) => console.log(`     ✗ ${m}`));
+if (errors.length) {
+  console.log(`  ‼ The email reader ERRORED on ${errors.length} case(s), so those results mean nothing. See the dev server window for the reason:`);
+  errors.slice(0, 3).forEach((m) => console.log(`     ‼ ${m}`));
+}
 console.log(`  Extraction mismatches (${extractionMiss.length}):`);
 extractionMiss.forEach((m) => console.log(`     ‼ ${m}`));
 console.log(`  Deterministic mismatches (${detMiss.length}):`);
