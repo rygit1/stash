@@ -6,7 +6,7 @@
 
 export const about = {
   title: "About the Creators",
-  intro: "Stash is built by three freshmen who got tired of good money going to waste.",
+  intro: "Stash is built by three freshmen at Harvard-Westlake who got tired of good money going to waste.",
 
   creatorsTitle: "The creators",
   // One block per person. "bio" can be left empty: "".
