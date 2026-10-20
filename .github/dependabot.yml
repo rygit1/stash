@@ -1,0 +1,13 @@
+# Weekly pull requests for outdated npm packages. Security fixes come as soon as GitHub knows
+# about them (turn on "Dependabot security updates" under Settings → Code security).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for all minor and patch bumps instead of one per package.
+      minor-and-patch:
+        update-types: [minor, patch]

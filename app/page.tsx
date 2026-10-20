@@ -1959,7 +1959,7 @@ function PhysicalBalanceAgent({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ merchant: store, code, pin }),
       });
-      if (r.status === 501) {
+      if (r.status === 501 || r.status === 404) {
         setState({ phase: "idle" }); // production no-op, shouldn't hit on localhost; hide gracefully
         return;
       }
@@ -2764,7 +2764,7 @@ function BalanceAgent({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ redeemUrl }),
       });
-      if (r.status === 501) {
+      if (r.status === 501 || r.status === 404) {
         // Production no-op, should never hit on localhost. Hide gracefully.
         setState({ phase: "idle" });
         return;
