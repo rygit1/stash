@@ -11,13 +11,13 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.104.1",
+    "@anthropic-ai/sdk": "^0.135.0",
     "@tesseract.js-data/eng": "1.0.0",
-    "@zxing/browser": "^0.2.0",
-    "@zxing/library": "^0.22.0",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
     "next": "^16.4.2",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "tesseract.js": "7.0.0"
   },
   "devDependencies": {
