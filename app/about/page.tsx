@@ -70,23 +70,6 @@ export default function AboutPage() {
             <li key={t}>{t}</li>
           ))}
         </ul>
-        <p>
-          Read the details in our{" "}
-          <Link href="/privacy" className="font-semibold text-emerald-700 underline">
-            Privacy Policy
-          </Link>
-          .
-        </p>
-      </Section>
-
-      <Section title={about.contactTitle}>
-        <p>
-          {about.contactText}{" "}
-          <a href={`mailto:${about.contactEmail}`} className="font-semibold text-emerald-700 underline">
-            {about.contactEmail}
-          </a>
-          .
-        </p>
       </Section>
     </main>
   );
