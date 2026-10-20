@@ -16,7 +16,7 @@ export const about = {
     { name: "Gavin Jain", role: "Co-founder", bio: "" },
   ],
   creatorsText: [
-    "We are a small team of young tech entrepreneurs, but we are extremely committed. All three of us do a bit of everything: designing the app, writing the code, testing it on our own gift cards, promoting and advertising the business, and keeping your data safe.",
+    "We are a small team of young tech entrepreneurs, but we are extremely committed. All three of us do a bit of everything: designing the app, writing the code, testing it on our own gift cards, promoting and advertising the business, and keeping your data safe. We hope you enjoy!",
   ],
 
   missionTitle: "Our mission",
