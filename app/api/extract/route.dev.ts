@@ -2,8 +2,8 @@ import { extractCard } from "@/lib/extract";
 import { rateLimit, bodyTooLarge } from "@/lib/ratelimit";
 
 // Developer-only: runs the email reader on pasted text. test-scan.mjs (the extraction quality
-// harness) calls it against a local `npm run dev`. It is switched off on the live site, so it is
-// never a public endpoint that spends Anthropic credits.
+// harness) calls it against a local `npm run dev`. The .dev.ts name keeps it out of production
+// builds (see next.config.ts), so it is never a public endpoint that spends Anthropic credits.
 function devOnly(): boolean {
   return !process.env.VERCEL && process.env.NODE_ENV !== "production";
 }

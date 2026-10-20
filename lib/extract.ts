@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 // Shared gift-card extractor — the proven engine (test-extract.mjs). Used by both
-// /api/scan (Gmail auto-scan) and /api/extract (developer-only, used by test-scan.mjs).
+// /api/scan (Gmail auto-scan) and /api/extract (developer-only, `next dev` only, used by test-scan.mjs).
 
 // Tried in order until one answers, so a single model outage can never take the scanner down again
 // (it used to hard-depend on Fable → "Couldn't reach the card reader"). Fable 5 is currently RETIRED

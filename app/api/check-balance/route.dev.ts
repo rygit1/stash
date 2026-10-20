@@ -11,8 +11,9 @@ const path = process.getBuiltinModule("node:path");
 // in a headless browser (Puppeteer, isolated in spike-balance/) and reveals the real balance +
 // code the delivery email hides behind a button. Proven for Nike.
 //
-// HARD no-op in production: puppeteer is NOT a dependency of this app and spike-balance is
-// .vercelignore'd — this route must never spawn on Vercel. The VERCEL guard below enforces it.
+// Not part of production builds at all: the .dev.ts name means only `next dev` serves it (see
+// next.config.ts). Puppeteer is NOT a dependency of this app and spike-balance is .vercelignore'd.
+// The guards below stay as a second line of defence.
 export const runtime = "nodejs"; // child_process + filesystem — never edge
 export const maxDuration = 60; // the headless drive takes multiple seconds
 
@@ -80,12 +81,11 @@ function isNikeHost(hostname: string): boolean {
   return h === "nike.com" || h.endsWith(".nike.com");
 }
 
-// The agent may only run on the developer's own machine: never on Vercel, only when the request
-// itself arrived on a loopback host, and never in a production build unless explicitly enabled
-// (ENABLE_BALANCE_AGENT=1 for someone running `next start` on their own laptop).
+// The agent may only run on the developer's own machine: never on Vercel, never outside
+// `next dev`, and only when the request itself arrived on a loopback host.
 function localAgentAllowed(req: Request): boolean {
   if (process.env.VERCEL) return false;
-  if (process.env.NODE_ENV === "production" && process.env.ENABLE_BALANCE_AGENT !== "1") return false;
+  if (process.env.NODE_ENV !== "development") return false;
   const host = (req.headers.get("host") ?? "").replace(/:\d+$/, "").replace(/^\[|\]$/g, "").toLowerCase();
   return host === "localhost" || host === "127.0.0.1" || host === "::1";
 }
