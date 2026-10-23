@@ -820,6 +820,7 @@ function Landing({
             <a href="#how" className="transition-colors hover:text-zinc-900">How it works</a>
             <a href="#features" className="transition-colors hover:text-zinc-900">Features</a>
             <a href="#security" className="transition-colors hover:text-zinc-900">Security</a>
+            <a href="/about" className="transition-colors hover:text-zinc-900">About</a>
           </div>
           <a
             href="/api/google/start"
@@ -1015,6 +1016,10 @@ function Landing({
       <footer className="border-t border-zinc-200/80 bg-white">
         <div className="mx-auto w-full max-w-6xl px-5 py-5 text-xs text-zinc-400 sm:px-8">
           &copy; {new Date().getFullYear()} Stash &middot; Find the gift-card money you forgot about. &middot;{" "}
+          <a href="/about" className="font-medium text-zinc-500 underline hover:text-zinc-700">
+            About
+          </a>{" "}
+          &middot;{" "}
           <a href="/privacy" className="font-medium text-zinc-500 underline hover:text-zinc-700">
             Privacy Policy
           </a>{" "}
@@ -1959,7 +1964,7 @@ function PhysicalBalanceAgent({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ merchant: store, code, pin }),
       });
-      if (r.status === 501) {
+      if (r.status === 501 || r.status === 404) {
         setState({ phase: "idle" }); // production no-op, shouldn't hit on localhost; hide gracefully
         return;
       }
@@ -2764,7 +2769,7 @@ function BalanceAgent({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ redeemUrl }),
       });
-      if (r.status === 501) {
+      if (r.status === 501 || r.status === 404) {
         // Production no-op, should never hit on localhost. Hide gracefully.
         setState({ phase: "idle" });
         return;

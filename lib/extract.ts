@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 // Shared gift-card extractor — the proven engine (test-extract.mjs). Used by both
-// /api/scan (Gmail auto-scan) and /api/extract (developer-only, used by test-scan.mjs).
+// /api/scan (Gmail auto-scan) and /api/extract (developer-only, `next dev` only, used by test-scan.mjs).
 
 // Every gift-card email goes to the fast model first: Claude Haiku 5.5, about a tenth of Claude Haiku
 // 4.5's price per token. Low effort: this is short, structured extraction, and effort is the lever for
