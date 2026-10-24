@@ -1,6 +1,6 @@
 // Minimal Gmail OAuth + read client — plain fetch, no SDK dependency.
-// Scope: gmail.readonly. For the personal self-test we keep the access token in an
-// httpOnly cookie (no DB). Production multi-user → store refresh tokens in Supabase.
+// Scope: gmail.readonly. The short-lived access token lives only in an httpOnly cookie; Stash has
+// no database and never asks for or stores a refresh token.
 
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
