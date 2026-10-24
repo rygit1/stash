@@ -3,14 +3,20 @@ import Anthropic from "@anthropic-ai/sdk";
 // Shared gift-card extractor — the proven engine (test-extract.mjs). Used by both
 // /api/scan (Gmail auto-scan) and /api/extract (developer-only, `next dev` only, used by test-scan.mjs).
 
-// Tried in order until one answers, so a single model outage can never take the scanner down again
-// (it used to hard-depend on Fable → "Couldn't reach the card reader"). Fable 5 is currently RETIRED
-// (hard 404 → "Please use Opus 4.8"), so Opus 4.8 leads and we don't waste a failing round-trip on it.
-// Fable stays last as a no-op for now; promote it back to the front if/when it returns.
-// ANTHROPIC_VISION_MODEL overrides the primary without a code change.
-const SMART_MODELS = [process.env.ANTHROPIC_VISION_MODEL, "claude-opus-4-8", "claude-fable-5"].filter(
+// Every gift-card email goes to the fast model first: Claude Haiku 5.5, about a tenth of Claude Haiku
+// 4.5's price per token. Low effort: this is short, structured extraction, and effort is the lever for
+// how much the model thinks (it thinks by default on this model).
+const FAST_MODEL = "claude-haiku-5-5";
+const FAST_EFFORT = "low" as const;
+
+// Ambiguous emails get a second look from a smarter model, tried in order until one answers, so a
+// single model outage (or a refusal) never takes the scanner down. Claude Opus 5.5 leads; Claude Opus
+// 4.8 is the backstop. ANTHROPIC_VISION_MODEL (the old variable name, kept so existing Vercel settings
+// still work) overrides the first choice without a code change.
+const SMART_MODELS = [process.env.ANTHROPIC_VISION_MODEL, "claude-opus-5-5", "claude-opus-4-8"].filter(
   (m): m is string => Boolean(m),
 );
+const SMART_EFFORT = "medium" as const;
 
 export type ExtractedCard = {
   isGiftCard: boolean;
@@ -175,17 +181,28 @@ export function tieBalance(
 }
 
 // One email → one SCHEMA-constrained extraction on the given model. Prompt + parse are
-// identical for Haiku and Fable so escalation is a pure model swap (SYSTEM/SCHEMA never weaken).
-async function runExtract(client: Anthropic, model: string, prompt: string): Promise<ExtractedCard> {
+// identical for every model so escalation is a pure model swap (SYSTEM/SCHEMA never weaken).
+async function runExtract(
+  client: Anthropic,
+  model: string,
+  effort: "low" | "medium" | "high",
+  prompt: string,
+): Promise<ExtractedCard> {
   const resp = await client.messages.create({
     model,
-    max_tokens: 400,
+    // Room for the model's thinking (it counts toward this cap on current models) plus the small
+    // JSON answer. 400 used to be enough when the model didn't think first.
+    max_tokens: 4000,
     system: SYSTEM,
     messages: [{ role: "user", content: prompt }],
-    output_config: { format: { type: "json_schema", schema: SCHEMA } },
+    output_config: { effort, format: { type: "json_schema", schema: SCHEMA } },
   });
-  const tb = resp.content.find((b) => b.type === "text");
-  return JSON.parse(tb && "text" in tb ? tb.text : "{}") as ExtractedCard;
+  // A safety classifier declined, or the cap cut the answer off: report it as a failure so the
+  // caller can try the next model (or skip this email) instead of trusting an empty result.
+  if (resp.stop_reason === "refusal") throw new Error(`${model} declined (${resp.stop_details?.category ?? "no category"})`);
+  const tb = resp.content.find((b) => b.type === "text"); // by type: a reply can start with thinking blocks
+  if (!tb || !("text" in tb) || !tb.text) throw new Error(`${model} returned no answer (stop_reason ${resp.stop_reason})`);
+  return JSON.parse(tb.text) as ExtractedCard;
 }
 
 // Buyer / sent / promo tells — the exact shapes where the cheap model most often misjudges
@@ -207,15 +224,15 @@ export async function extractCard(input: { from?: string; date?: string; subject
   const prompt = `${input.from ? `From: ${input.from}\n` : ""}${input.date ? `Date: ${input.date}\n` : ""}${input.subject ? `Subject: ${input.subject}\n\n` : ""}${input.body}`.slice(0, 12000);
 
   const client = new Anthropic({ apiKey });
-  const card = await runExtract(client, "claude-haiku-4-5", prompt);
+  const card = await runExtract(client, FAST_MODEL, FAST_EFFORT, prompt);
 
-  // Confidence escalation: re-judge the hard cases on Fable (better judgment, same SYSTEM/SCHEMA)
+  // Confidence escalation: re-judge the hard cases on a smarter model (same SYSTEM/SCHEMA)
   // and return its verdict. Fires only on ambiguous emails (~few per inbox), so it's cheap.
   // NO_ESCALATE pins to Haiku (lets the battery measure the cheap model alone).
   if (!process.env.NO_ESCALATE && isAmbiguous(card, prompt)) {
     for (const model of SMART_MODELS) {
       try {
-        return await runExtract(client, model, prompt);
+        return await runExtract(client, model, SMART_EFFORT, prompt);
       } catch (e) {
         console.error(`[scan] escalation model ${model} failed:`, e instanceof Error ? e.message : e);
       }

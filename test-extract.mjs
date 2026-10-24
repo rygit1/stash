@@ -1,4 +1,5 @@
-// Proves the core engine: gift-card email -> structured card, with Haiku 4.5.
+// Proves the core engine: gift-card email -> structured card, with Claude Haiku 5.5 (same model and
+// settings as lib/extract.ts).
 // Includes a PROMO email to confirm we reject "earn a gift card" marketing.
 import fs from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
@@ -30,13 +31,14 @@ amount = the dollar value loaded on the card (number only). Use null for anythin
 
 async function extract(email) {
   const resp = await client.messages.create({
-    model: "claude-haiku-4-5",
-    max_tokens: 400,
+    model: "claude-haiku-5-5",
+    max_tokens: 4000, // room for thinking plus the JSON answer
     system: SYSTEM,
     messages: [{ role: "user", content: `From: ${email.from}\nDate: ${email.date}\nSubject: ${email.subject}\n\n${email.body}` }],
-    output_config: { format: { type: "json_schema", schema: SCHEMA } },
+    output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
   });
-  const text = resp.content.find((b) => b.type === "text").text;
+  if (resp.stop_reason === "refusal") throw new Error(`declined: ${resp.stop_details?.category ?? "no category"}`);
+  const text = resp.content.find((b) => b.type === "text").text; // by type: replies can start with thinking blocks
   return { data: JSON.parse(text), usage: resp.usage };
 }
 

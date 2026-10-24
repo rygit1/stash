@@ -33,7 +33,10 @@ export async function POST(req: Request) {
       date: typeof body.date === "string" ? body.date : undefined,
     });
     return Response.json(card, { headers: { "Cache-Control": "no-store" } });
-  } catch {
-    return Response.json({ error: "extract_failed" }, { status: 500 });
+  } catch (e) {
+    // Developer-only route: show why, so a dead key or a rejected request is obvious in the dev server.
+    const reason = e instanceof Error ? e.message : String(e);
+    console.error("[extract] failed:", reason);
+    return Response.json({ error: "extract_failed", reason }, { status: 500 });
   }
 }
