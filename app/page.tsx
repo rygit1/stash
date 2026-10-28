@@ -1877,7 +1877,9 @@ function MockCardFace({ card }: { card: PhysicalCard }) {
   const barcodeValue = card.code?.replace(/[^0-9]/g, "") ?? "";
   const hasBarcode = barcodeValue.length >= 4;
   return (
-    <div className="absolute inset-0" style={{ background: art.bg }}>
+    // @container: on narrow cards (small phones) the chip and number move up and the barcode caption is
+    // dropped, so the amount still fits above the barcode.
+    <div className="@container absolute inset-0" style={{ background: art.bg }}>
       {art.motif}
       <div className="absolute inset-x-4 top-3.5">
         <p className={`truncate pr-16 text-lg font-bold drop-shadow-sm ${art.wordCls ?? ""}`} style={{ color: art.ink }}>
@@ -1889,7 +1891,7 @@ function MockCardFace({ card }: { card: PhysicalCard }) {
       </div>
       {/* chip */}
       <div
-        className="absolute left-4 top-[38%] h-7 w-10 rounded-md border border-black/20"
+        className={`absolute left-4 top-[38%] h-7 w-10 rounded-md border border-black/20 ${hasBarcode ? "@max-[19rem]:top-[34%]" : ""}`}
         style={{ background: "linear-gradient(135deg, #f3d27e 0%, #d4ab52 55%, #b9913e 100%)" }}
       >
         <div className="absolute inset-x-1 top-[9px] h-px bg-black/25" />
@@ -1899,33 +1901,36 @@ function MockCardFace({ card }: { card: PhysicalCard }) {
       </div>
       {/* embossed number */}
       <p
-        className={`absolute left-4 font-mono text-[15px] font-semibold tracking-[0.14em] ${hasBarcode ? "top-[40%]" : "top-[60%]"}`}
+        className={`absolute left-4 font-mono text-[15px] font-semibold tracking-[0.14em] ${hasBarcode ? "top-[40%] @max-[19rem]:top-[36%]" : "top-[60%]"}`}
         style={{ color: art.ink, textShadow: "0 1px 0 rgba(255,255,255,.22), 0 -1px 1px rgba(0,0,0,.5)" }}
       >
         ••••&ensp;••••&ensp;••••&ensp;{last4 ?? "••••"}
       </p>
-      {/* amount + brand mark: sits above the barcode strip when one is present */}
-      <div className={`absolute inset-x-4 flex items-end justify-between gap-3 ${hasBarcode ? "bottom-[3.6rem]" : "bottom-2.5"}`}>
-        {card.amount !== null ? (
-          <p className="text-lg font-bold tabular-nums" style={{ color: art.ink }}>
-            ${card.amount.toFixed(2)}
-          </p>
-        ) : (
-          <p className="text-[11px] font-medium" style={{ color: art.sub }}>
-            value not printed
-          </p>
-        )}
-        <div className="shrink-0">{art.mark ?? null}</div>
-      </div>
-      {/* real gift-card barcode: white strip across the bottom, scannable Code 128 of the card number */}
-      {hasBarcode && (
-        <div className="absolute inset-x-2.5 bottom-1.5">
-          <Barcode128 value={barcodeValue} height={30} moduleWidth={1.4} className="shadow-sm" />
-          <p className="mt-0.5 text-center text-[8px] font-medium" style={{ color: art.sub }}>
-            scan at checkout where supported
-          </p>
+      {/* amount + brand mark, then the barcode strip below it. Stacked in one column from the bottom so the
+          amount always sits right above the barcode, however tall the barcode's number line wraps. */}
+      <div className={`absolute inset-x-2.5 flex flex-col gap-1 ${hasBarcode ? "bottom-1.5" : "bottom-2.5"}`}>
+        <div className="flex items-end justify-between gap-3 px-1.5">
+          {card.amount !== null ? (
+            <p className="text-lg font-bold leading-tight tabular-nums" style={{ color: art.ink }}>
+              ${card.amount.toFixed(2)}
+            </p>
+          ) : (
+            <p className="text-[11px] font-medium" style={{ color: art.sub }}>
+              value not printed
+            </p>
+          )}
+          <div className="shrink-0">{art.mark ?? null}</div>
         </div>
-      )}
+        {/* real gift-card barcode: white strip across the bottom, scannable Code 128 of the card number */}
+        {hasBarcode && (
+          <div>
+            <Barcode128 value={barcodeValue} height={30} moduleWidth={1.4} className="shadow-sm" />
+            <p className="mt-0.5 text-center text-[8px] font-medium @max-[19rem]:hidden" style={{ color: art.sub }}>
+              scan at checkout where supported
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
