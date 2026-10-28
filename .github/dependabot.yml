@@ -7,6 +7,11 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # typescript-eslint (used by `npm run lint`) supports TypeScript below 6.1 only. TypeScript 7
+      # broke the lint check; remove this once typescript-eslint supports it.
+      - dependency-name: typescript
+        versions: [">=6.1"]
     groups:
       # One PR for all minor and patch bumps instead of one per package.
       minor-and-patch:
