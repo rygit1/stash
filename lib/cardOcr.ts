@@ -1,4 +1,5 @@
-// On-device text reading for plastic gift cards that have no barcode (Tesseract.js, WebAssembly).
+// On-device text reading for plastic gift cards (Tesseract.js, WebAssembly): the number and PIN when
+// a card has no barcode, and the store's name either way.
 // The photo never leaves the phone: the engine and English data are served from stashinc.pro
 // (/tesseract, copied there by scripts/copy-ocr-assets.mjs) and run in a Web Worker. They are
 // only downloaded the first time a barcode-less card is scanned, then cached by the browser.
@@ -7,6 +8,7 @@
 // it returns as "check this one", never as exact (unlike a barcode, which is exact).
 
 import type { Worker } from "tesseract.js";
+import { findStoreName } from "./giftStores";
 
 export type CardText = { code: string | null; pin: string | null; store: string | null };
 
@@ -121,19 +123,13 @@ function votePin(texts: string[], code: string | null): string | null {
   return mostCommon(found);
 }
 
-function findStore(texts: string[], knownStores: string[]): string | null {
-  const lower = texts.join("\n").toLowerCase();
-  const hit = knownStores.find((k) => new RegExp(`\\b${k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(lower));
-  return hit ? hit.replace(/\b\w/g, (c) => c.toUpperCase()) : null;
-}
-
 // Pure parser, exported for tests: combine one or more readings of the same card.
 // A plain string or string[] counts every reading equally; readCardText passes weights.
-export function parseCardText(texts: string | string[] | { text: string; weight: number }[], knownStores: string[]): CardText {
+export function parseCardText(texts: string | string[] | { text: string; weight: number }[]): CardText {
   const readings = (Array.isArray(texts) ? texts : [texts]).map((t) => (typeof t === "string" ? { text: t, weight: 1 } : t));
   const all = readings.map((r) => r.text);
   const code = voteCode(readings);
-  return { code, pin: votePin(all, code), store: findStore(all, knownStores) };
+  return { code, pin: votePin(all, code), store: findStoreName(all.join("\n")) };
 }
 
 // Grayscale, enlarged, higher-contrast copy of the photo: printed digits read much more reliably.
@@ -154,12 +150,17 @@ async function enhance(dataUrl: string, contrast: number): Promise<string> {
 
 // Read a card photo (data URL) with four quick passes and vote. Resolves null if the engine can't
 // load or it takes too long, so the scanner falls back to empty boxes to type into, as before.
-export async function readCardText(dataUrl: string, knownStores: string[], timeoutMs = 45_000): Promise<CardText | null> {
+// wordsOnly: skip the two digit passes, for when a barcode already gave the exact number and only the
+// store name and PIN are wanted. Twice as fast.
+export async function readCardText(
+  dataUrl: string,
+  { wordsOnly = false, timeoutMs = 45_000 }: { wordsOnly?: boolean; timeoutMs?: number } = {},
+): Promise<CardText | null> {
   const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
   const read = (async () => {
     try {
       const worker = await getWorker();
-      const [strong, gentle] = [await enhance(dataUrl, 2.5), await enhance(dataUrl, 1.5)];
+      const strong = await enhance(dataUrl, 2.5);
       const texts: { text: string; weight: number }[] = [];
       const pass = async (image: string, params: Record<string, string>, weight: number) => {
         await worker.setParameters(params);
@@ -169,9 +170,11 @@ export async function readCardText(dataUrl: string, knownStores: string[], timeo
       const digits = { tessedit_pageseg_mode: "6", tessedit_char_whitelist: "0123456789 " };
       await pass(dataUrl, words, 1);
       await pass(strong, words, 1);
-      await pass(strong, digits, 1.5);
-      await pass(gentle, digits, 1.5);
-      return parseCardText(texts, knownStores);
+      if (!wordsOnly) {
+        await pass(strong, digits, 1.5);
+        await pass(await enhance(dataUrl, 1.5), digits, 1.5);
+      }
+      return parseCardText(texts);
     } catch {
       return null;
     }

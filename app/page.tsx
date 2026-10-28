@@ -2234,7 +2234,9 @@ function PlasticScanner({
   const [shaky, setShaky] = useState<Record<string, boolean>>({});
   // True when the card reader could not be reached and the on-device barcode carried the scan.
   const [readerDown, setReaderDown] = useState(false);
-  const [readingText, setReadingText] = useState(false); // on-device text recognition running
+  // On-device text recognition running: reading the printed number (no barcode), or just the store
+  // name and PIN (the barcode already gave the number).
+  const [readingText, setReadingText] = useState<null | "number" | "store">(null);
   const [saving, setSaving] = useState(false);
   const [shots, setShots] = useState<string[]>([]); // [front] or [front, back], front is always the card face
   const [barcode, setBarcode] = useState<string | null>(null); // exact code read off a barcode/QR in any shot
@@ -2453,9 +2455,9 @@ function PlasticScanner({
         setShaky({});
       }
       setReaderDown(false);
-      setReadingText(true);
-      const read = await readCardText(dataUrl, Object.keys(BRAND));
-      setReadingText(false);
+      setReadingText("number");
+      const read = await readCardText(dataUrl);
+      setReadingText(null);
       if (read) {
         if (read.code) setCode((prev) => prev || read.code!);
         if (read.pin) setPin((prev) => prev || read.pin!);
@@ -2471,18 +2473,35 @@ function PlasticScanner({
       return;
     }
 
-    setStore("");
-    setAmount("");
+    // On the back side, keep what the front shot (or the person) already filled in.
+    const isBack = nextShots.length > 1;
+    if (!isBack) {
+      setStore("");
+      setAmount("");
+      setPin("");
+    }
     setCode(decoded);
-    setPin("");
     setConfidence("low");
     setIssue(null);
-    // A barcode-read number is exact, so nothing is flagged.
-    setShaky({ code: false, pin: false, store: false, amount: false });
+    // A barcode-read number is exact, so it is never flagged.
+    setShaky((prev) => ({ ...(isBack ? prev : {}), code: false }));
     setReaderDown(true);
 
-    // There is no second side worth shooting: only a barcode can be read, and we already have it.
-    // Go straight to confirm so the person can fill in the rest.
+    // The barcode only holds the number. The store's name (and often the PIN) is printed on the card,
+    // usually in the fine print or as its website, so read the words too, on this device. Whatever
+    // that fills is a guess and is flagged amber; the person can still type over it.
+    setReadingText("store");
+    const read = await readCardText(dataUrl, { wordsOnly: true, timeoutMs: 20_000 });
+    setReadingText(null);
+    if (read?.store) setStore((prev) => prev || read.store!);
+    if (read?.pin) setPin((prev) => prev || read.pin!);
+    setShaky((prev) => ({
+      ...prev,
+      store: prev.store || Boolean(read?.store),
+      pin: prev.pin || Boolean(read?.pin),
+    }));
+
+    // There is no second side worth shooting: we already have the exact number.
     setPhase("confirm");
   }
 
@@ -2566,7 +2585,7 @@ function PlasticScanner({
               {phase === "reading" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/60">
                   <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-emerald-100 border-t-emerald-500" />
-                  <p className="text-sm font-semibold text-zinc-700">{readingText ? "Reading the printed number…" : "Reading card…"}</p>
+                  <p className="text-sm font-semibold text-zinc-700">{readingText === "number" ? "Reading the printed number…" : readingText === "store" ? "Reading the store name…" : "Reading card…"}</p>
                 </div>
               )}
             </div>
@@ -2609,8 +2628,8 @@ function PlasticScanner({
               <div className="mt-4 flex flex-col gap-3">
                 {readerDown && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] leading-relaxed text-amber-800">
-                    <span className="font-semibold">Read the number straight off the barcode.</span> Fill in the store and
-                    value yourself below.
+                    <span className="font-semibold">Read the number straight off the barcode.</span>{" "}
+                    {store ? "Check the store name and fill in the value below." : "Fill in the store and value yourself below."}
                   </div>
                 )}
                 <p className="text-xs text-zinc-400">
