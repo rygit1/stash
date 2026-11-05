@@ -9,6 +9,9 @@ import { NextResponse, type NextRequest } from "next/server";
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const isDev = process.env.NODE_ENV === "development";
+  // Accounts (prototype, see ACCOUNTS.md) talk to Supabase from the browser. Only allowed when it's
+  // configured; the live site doesn't set it, so its policy is unchanged.
+  const supabase = supabaseOrigin();
   const csp = [
     "default-src 'self'",
     // Dev only: React needs eval for its debugging stacks. Never sent in production.
@@ -17,7 +20,7 @@ export function proxy(request: NextRequest) {
     "img-src 'self' blob: data:",
     "media-src 'self' blob:",
     "font-src 'self'",
-    "connect-src 'self'",
+    `connect-src 'self'${supabase ? ` ${supabase}` : ""}`,
     "worker-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
@@ -33,6 +36,14 @@ export function proxy(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
   return response;
+}
+
+function supabaseOrigin(): string | null {
+  try {
+    return process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin : null;
+  } catch {
+    return null;
+  }
 }
 
 export const config = {

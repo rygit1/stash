@@ -1020,6 +1020,15 @@ function Landing({
             About
           </a>{" "}
           &middot;{" "}
+          {/* Accounts prototype: only shown where it's configured (see ACCOUNTS.md), never on the live site. */}
+          {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+            <>
+              <a href="/account" className="font-medium text-zinc-500 underline hover:text-zinc-700">
+                Account (beta)
+              </a>{" "}
+              &middot;{" "}
+            </>
+          )}
           <a href="/privacy" className="font-medium text-zinc-500 underline hover:text-zinc-700">
             Privacy Policy
           </a>{" "}
