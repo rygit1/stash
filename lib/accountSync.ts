@@ -50,7 +50,7 @@ async function fingerprint(value: string | null): Promise<string> {
   return Array.from(new Uint8Array(d), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export type SyncResult = { pulled: string[]; pushed: string[] };
+export type SyncResult = { pulled: string[]; pushed: string[]; stored: number };
 
 /** Two-way sync of the wallet with the signed-in user's account. */
 export async function syncWallet(sb: SupabaseClient, userId: string, walletKey: CryptoKey): Promise<SyncResult> {
@@ -104,7 +104,9 @@ export async function syncWallet(sb: SupabaseClient, userId: string, walletKey: 
   }
 
   writeMeta(userId, meta);
-  return { pulled, pushed };
+  // How many parts of the wallet are now saved (encrypted) in the account.
+  const stored = SYNC_KEYS.filter((k) => meta[k].serverAt !== null).length;
+  return { pulled, pushed, stored };
 }
 
 /** Forget this device's sync bookkeeping (on sign-out or account deletion). */

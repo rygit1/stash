@@ -42,7 +42,7 @@ export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [lastSync, setLastSync] = useState<{ at: Date; pulled: number; pushed: number } | null>(null);
+  const [lastSync, setLastSync] = useState<{ at: Date; pulled: number; pushed: number; stored: number } | null>(null);
 
   // Work out where this person is: signed out, needs setup, needs to unlock, or ready.
   const resolve = useCallback(
@@ -86,7 +86,7 @@ export default function AccountPage() {
     async (key: CryptoKey) => {
       if (!sb || !user) return;
       const r = await syncWallet(sb, user.id, key);
-      setLastSync({ at: new Date(), pulled: r.pulled.length, pushed: r.pushed.length });
+      setLastSync({ at: new Date(), pulled: r.pulled.length, pushed: r.pushed.length, stored: r.stored });
     },
     [sb, user],
   );
@@ -198,9 +198,14 @@ export default function AccountPage() {
               <p className="font-semibold">🔒 Encrypted sync is on</p>
               <p className="mt-1 text-sm">Signed in as {user.email}</p>
               <p className="mt-1 text-sm" data-testid="sync-status">
-                {lastSync
-                  ? `Last synced ${lastSync.at.toLocaleTimeString()}: ${lastSync.pulled} downloaded, ${lastSync.pushed} uploaded`
-                  : "Syncing…"}
+                {!lastSync
+                  ? "Syncing…"
+                  : lastSync.pulled + lastSync.pushed === 0
+                    ? `Up to date (checked ${lastSync.at.toLocaleTimeString()})`
+                    : `Synced ${lastSync.at.toLocaleTimeString()}: ${lastSync.pulled} downloaded, ${lastSync.pushed} uploaded`}
+              </p>
+              <p className="mt-1 text-sm">
+                {lastSync && (lastSync.stored === 0 ? "Nothing saved in your account yet." : `${lastSync.stored} part${lastSync.stored === 1 ? "" : "s"} of your wallet saved, encrypted.`)}
               </p>
             </div>
             {lastSync && lastSync.pulled > 0 && (
