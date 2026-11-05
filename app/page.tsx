@@ -822,12 +822,23 @@ function Landing({
             <a href="#security" className="transition-colors hover:text-zinc-900">Security</a>
             <a href="/about" className="transition-colors hover:text-zinc-900">About</a>
           </div>
-          <a
-            href="/api/google/start"
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-zinc-900 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98] sm:px-4"
-          >
-            <GoogleIcon /> <span className="hidden sm:inline">Connect Gmail</span><span className="sm:hidden">Connect</span>
-          </a>
+          <div className="flex items-center gap-2">
+            {physicalCount > 0 && (
+              <button
+                onClick={onOpenWallet}
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-100 active:scale-[0.98]"
+              >
+                💳 <span className="hidden sm:inline">My wallet</span>
+                <span className="rounded-full bg-emerald-600 px-1.5 text-xs text-white">{physicalCount}</span>
+              </button>
+            )}
+            <a
+              href="/api/google/start"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-zinc-900 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98] sm:px-4"
+            >
+              <GoogleIcon /> <span className="hidden sm:inline">Connect Gmail</span><span className="sm:hidden">Connect</span>
+            </a>
+          </div>
         </nav>
       </header>
 
@@ -869,8 +880,22 @@ function Landing({
                 />
               </div>
               {physicalCount > 0 && (
-                <button onClick={onOpenWallet} className="mt-5 text-sm font-semibold text-emerald-600 hover:text-emerald-700">
-                  💳 {`${physicalCount} ${physicalCount === 1 ? "card" : "cards"} in your wallet`} &rarr; open
+                <button
+                  onClick={onOpenWallet}
+                  className="group mt-4 flex w-full items-center gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-left shadow-sm transition hover:border-emerald-300 hover:bg-emerald-100/70 active:scale-[0.99]"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-2xl shadow-sm" aria-hidden="true">
+                    💳
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-lg font-bold text-emerald-900">Open your wallet</span>
+                    <span className="block text-sm text-emerald-700">
+                      {`${physicalCount} gift ${physicalCount === 1 ? "card" : "cards"} saved on this device`}
+                    </span>
+                  </span>
+                  <span className="text-2xl text-emerald-600 transition group-hover:translate-x-1" aria-hidden="true">
+                    &rarr;
+                  </span>
                 </button>
               )}
               <p className="mt-7 text-sm text-zinc-400">
