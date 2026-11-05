@@ -611,6 +611,7 @@ export default function Home() {
           resolveStatus={resolveStatus}
           onResolveCode={mergeResolvedCode}
           celebration={celebration}
+          onBack={() => setStage("landing")}
         />
       )}
       {stage === "error" && <ErrorView error={error} />}
@@ -1172,6 +1173,7 @@ function Wallet({
   resolveStatus,
   onResolveCode,
   celebration,
+  onBack,
 }: {
   cards: Found[];
   stats: Stats | null;
@@ -1180,6 +1182,7 @@ function Wallet({
   resolveStatus: Record<string, ResolvePhase>;
   onResolveCode: (id: string, cardNumber: string | null, pin: string | null) => void;
   celebration: { id: number; amount: number } | null;
+  onBack: () => void;
 }) {
   // localStorage is the final authority on used/available, it overrides server status both ways.
   const [overrides, setOverrides] = useState<Record<string, "used" | "available">>(() => {
@@ -1477,6 +1480,9 @@ function Wallet({
       {celebrateAmt !== null && celebrateAmt > 0 && (
         <CelebrateBanner amount={celebrateAmt} onDone={() => setCelebrateAmt(null)} />
       )}
+      <button onClick={onBack} className="mb-4 self-start text-sm font-semibold text-emerald-600 transition hover:text-emerald-700">
+        &larr; Back to Stash
+      </button>
       {viewStash && emailScanned && (
         <button
           onClick={() => setViewStash(false)}
@@ -2047,7 +2053,7 @@ function PhysicalBalanceAgent({
       onClick={run}
       className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98]"
     >
-      ⚡ Check balance now
+      ⚡ Auto-check balance (test)
     </button>
   );
 }
@@ -2138,51 +2144,63 @@ function PhysicalCardRow({
         )}
       </div>
 
-      <div className="p-3">
-        {daysLeft(card.expires) !== null && (
-          <div className="mb-2 flex flex-wrap items-center gap-2">
-            <ExpiryBadge expires={card.expires} />
-            <ExpiryReminder store={card.store} amount={card.amount} expires={card.expires} />
-          </div>
-        )}
-        {checked ? (
-          <p className="mb-2 text-sm font-bold tabular-nums text-emerald-600">
-            ${Math.max(0, checked.amount - spent).toFixed(2)} left{" "}
-            <span className="text-[11px] font-medium text-zinc-400">
-              ✓ checked {fmtChecked(checked.at)}
-              {spent > 0 ? `, then $${spent.toFixed(2)} you logged` : ""}
-            </span>
-          </p>
-        ) : spent > 0 &&
-          (card.amount !== null ? (
+      {/* Status (expiry, balance left), then the two main actions, then the action bar. */}
+      {(daysLeft(card.expires) !== null || !!checked || spent > 0) && (
+        <div className="border-b border-zinc-100 px-3 pb-1 pt-3">
+          {daysLeft(card.expires) !== null && (
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <ExpiryBadge expires={card.expires} />
+              <ExpiryReminder store={card.store} amount={card.amount} expires={card.expires} />
+            </div>
+          )}
+          {checked ? (
             <p className="mb-2 text-sm font-bold tabular-nums text-emerald-600">
-              ${Math.max(0, card.amount - spent).toFixed(2)} left{" "}
-              <span className="text-[11px] font-medium text-zinc-400">after ${spent.toFixed(2)} you logged</span>
-            </p>
-          ) : (
-            // No printed value → never invent a balance; just show what's been logged.
-            <p className="mb-2">
-              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-zinc-500">
-                −${spent.toFixed(2)} spent
+              ${Math.max(0, checked.amount - spent).toFixed(2)} left{" "}
+              <span className="text-[11px] font-medium text-zinc-400">
+                ✓ checked {fmtChecked(checked.at)}
+                {spent > 0 ? `, then $${spent.toFixed(2)} you logged` : ""}
               </span>
             </p>
-          ))}
-        {(card.code || card.pin) && (
-          <button
-            onClick={() => setRevealed((v) => !v)}
-            className="flex w-full items-center justify-between gap-2 rounded-xl bg-zinc-50 px-3 py-2 text-left text-sm transition hover:bg-zinc-100"
-          >
-            {revealed ? (
-              <span className="truncate font-mono text-zinc-900">
-                {card.code}
-                {card.pin ? ` · PIN ${card.pin}` : ""}
-              </span>
+          ) : spent > 0 &&
+            (card.amount !== null ? (
+              <p className="mb-2 text-sm font-bold tabular-nums text-emerald-600">
+                ${Math.max(0, card.amount - spent).toFixed(2)} left{" "}
+                <span className="text-[11px] font-medium text-zinc-400">after ${spent.toFixed(2)} you logged</span>
+              </p>
             ) : (
-              <span className="font-medium text-emerald-600">🎟️ Reveal code</span>
-            )}
-            <span className="text-zinc-400">{revealed ? "hide" : "tap"}</span>
-          </button>
+              // No printed value → never invent a balance; just show what's been logged.
+              <p className="mb-2">
+                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-zinc-500">
+                    −${spent.toFixed(2)} spent
+                </span>
+              </p>
+            ))}
+        </div>
+      )}
+      <div className="p-3">
+        {revealed && (card.code || card.pin) && (
+          <p className="mb-2 break-all rounded-xl bg-zinc-50 px-3 py-2 font-mono text-sm text-zinc-900">
+            {card.code}
+            {card.pin ? ` · PIN ${card.pin}` : ""}
+          </p>
         )}
+        <div className={`grid gap-2 ${card.code || card.pin ? "grid-cols-2" : "grid-cols-1"}`}>
+          {(card.code || card.pin) && (
+            <button
+              onClick={() => setRevealed((v) => !v)}
+              className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 active:scale-[0.98]"
+            >
+              {revealed ? "Hide code" : "🎟️ Reveal code"}
+            </button>
+          )}
+          <button
+            onClick={useIt}
+            title={action.label}
+            className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-zinc-900 text-sm font-semibold text-white transition hover:bg-zinc-800 active:scale-[0.98]"
+          >
+            {copied ? "Copied ✓, opening…" : `${shortActionLabel(action.label)} →`}
+          </button>
+        </div>
         {/* Agent-fetched balance (clearly labeled as live, never silently treated as a printed value). */}
         {agentAmount !== null && (
           <p className="mt-2 text-sm font-bold tabular-nums text-emerald-600">
@@ -2196,12 +2214,6 @@ function PhysicalCardRow({
         {needsPinForCheck && (
           <p className="mt-2 px-1 text-[11px] font-medium text-zinc-400">scan the back for the security code to auto-check the balance</p>
         )}
-        <button
-          onClick={useIt}
-          className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 text-sm font-semibold text-white transition active:scale-[0.98]"
-        >
-          {copied ? "Code copied ✓, opening…" : `${action.label} →`}
-        </button>
         {asking && (
           <BalanceAsk
             onSave={(a) => {
@@ -2211,9 +2223,8 @@ function PhysicalCardRow({
             onCancel={() => setAsking(false)}
           />
         )}
-        <NearbyLink store={card.store} />
-        <SpendFooter spends={spends} onLog={onLogSpend} onRemove={onRemoveSpend} onMarkUsed={onMarkUsed} />
       </div>
+      <CardActions store={card.store} spends={spends} onLog={onLogSpend} onRemove={onRemoveSpend} onMarkUsed={onMarkUsed} />
     </div>
   );
 }
@@ -2883,7 +2894,7 @@ function BalanceAgent({
       onClick={run}
       className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98]"
     >
-      ⚡ Check balance now
+      ⚡ Auto-check balance (test)
     </button>
   );
 }
@@ -2956,18 +2967,20 @@ function BalanceAsk({ onSave, onCancel }: { onSave: (amount: number) => void; on
 
 // "📍 Find one near me": opens the phone's maps app searching for this store. Apple Maps on Apple
 // devices, Google Maps elsewhere, decided at tap time. Hidden for online-only cards.
-function NearbyLink({ store }: { store: string | null }) {
-  if (!nearbyMapsUrl(store, false)) return null;
-  const open = () => {
-    const apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
-    const url = nearbyMapsUrl(store, apple);
-    if (url) window.open(url, "_blank", "noopener");
-  };
-  return (
-    <button onClick={open} className="mt-1.5 w-full text-center text-xs font-semibold text-emerald-700 hover:text-emerald-800">
-      📍 Find {store} near me
-    </button>
-  );
+// Opens a maps search for the nearest store. The phone's own maps app works out where the person is.
+function openNearby(store: string | null) {
+  const apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+  const url = nearbyMapsUrl(store, apple);
+  if (url) window.open(url, "_blank", "noopener");
+}
+
+// The main "use it" button sits next to "Reveal code", so it gets a short label; the full one
+// ("Check your Starbucks balance") is its tooltip.
+function shortActionLabel(label: string): string {
+  if (/check/i.test(label)) return "Check balance";
+  if (/apply/i.test(label)) return "Apply it";
+  if (/redeem/i.test(label)) return "Redeem";
+  return "Use it";
 }
 
 function CardRow({
@@ -3151,8 +3164,9 @@ function CardRow({
           onCancel={() => setAsking(false)}
         />
       )}
-      <NearbyLink store={card.store} />
-      <SpendFooter spends={spends} onLog={onLogSpend} onRemove={onRemoveSpend} onMarkUsed={onMarkUsed} onNotMine={onNotMine} />
+      <div className="-mx-3 -mb-3 mt-3">
+        <CardActions store={card.store} spends={spends} onLog={onLogSpend} onRemove={onRemoveSpend} onMarkUsed={onMarkUsed} onNotMine={onNotMine} />
+      </div>
     </div>
   );
 }
@@ -3164,13 +3178,17 @@ const fmtSpendAt = (s: string) => {
 };
 
 // Quiet inline purchase log, a whisper under the Use-it button, never competing with it.
-function SpendFooter({
+// The row of small actions at the bottom of every card: equal buttons split by thin lines, with the
+// purchase log opening underneath. Shared by plastic and Gmail cards so every card looks the same.
+function CardActions({
+  store,
   spends,
   onLog,
   onRemove,
   onMarkUsed,
   onNotMine,
 }: {
+  store: string | null;
   spends: SpendEntry[];
   onLog: (amount: number) => void;
   onRemove: (i: number) => void;
@@ -3188,26 +3206,27 @@ function SpendFooter({
     setOpen(false);
   };
   return (
-    <>
-      <div className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px] font-medium text-zinc-300">
-        <button onClick={() => setOpen((v) => !v)} className="transition hover:text-zinc-500">
-          − log a purchase
+    <div className="border-t border-zinc-100">
+      <div className="flex divide-x divide-zinc-100">
+        {nearbyMapsUrl(store, false) && (
+          <button onClick={() => openNearby(store)} className={actionCls}>
+            📍 Nearby
+          </button>
+        )}
+        <button onClick={() => setOpen((v) => !v)} className={`${actionCls} ${open ? "bg-zinc-50 text-zinc-900" : ""}`}>
+          ✏️ Log spend
         </button>
-        <span>&middot;</span>
-        <button onClick={onMarkUsed} className="transition hover:text-zinc-500">
-          already spent? mark as used
+        <button onClick={onMarkUsed} className={actionCls}>
+          ✓ Mark used
         </button>
         {onNotMine && (
-          <>
-            <span>&middot;</span>
-            <button onClick={onNotMine} className="transition hover:text-zinc-500">
-              not mine
-            </button>
-          </>
+          <button onClick={onNotMine} className={actionCls}>
+            Not mine
+          </button>
         )}
       </div>
       {open && (
-        <div className="mt-2 rounded-xl bg-zinc-50 p-2.5">
+        <div className="border-t border-zinc-100 bg-zinc-50 p-2.5">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-zinc-400">$</span>
             <input
@@ -3246,9 +3265,12 @@ function SpendFooter({
           )}
         </div>
       )}
-    </>
+    </div>
   );
 }
+
+const actionCls =
+  "flex flex-1 items-center justify-center gap-1 px-1 py-2.5 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900";
 
 function UsedRow({
   card,
