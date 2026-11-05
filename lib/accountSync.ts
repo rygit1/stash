@@ -26,8 +26,10 @@ export function accounts(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
+  // "implicit": the sign-in link works in whichever browser it's opened in. PKCE (link must be opened
+  // in the browser that asked for it) is stricter; revisit before launch (see ACCOUNTS.md).
   client ??= createClient(url, key, {
-    auth: { flowType: "pkce", persistSession: true, detectSessionInUrl: true, autoRefreshToken: true },
+    auth: { flowType: "implicit", persistSession: true, detectSessionInUrl: true, autoRefreshToken: true },
   });
   return client;
 }
@@ -107,6 +109,25 @@ export async function syncWallet(sb: SupabaseClient, userId: string, walletKey: 
   // How many parts of the wallet are now saved (encrypted) in the account.
   const stored = SYNC_KEYS.filter((k) => meta[k].serverAt !== null).length;
   return { pulled, pushed, stored };
+}
+
+/** Fired on window when a sync brings in changes from another device, so pages can re-read the wallet. */
+export const WALLET_SYNCED_EVENT = "stash-wallet-synced";
+
+/** How many gift cards are in this device's wallet (scanned plastic cards plus cards from Gmail). */
+export function walletCardCount(): number {
+  const count = (key: string, pick: (v: unknown) => unknown) => {
+    try {
+      const v = pick(JSON.parse(localStorage.getItem(key) ?? "null"));
+      return Array.isArray(v) ? v.length : 0;
+    } catch {
+      return 0;
+    }
+  };
+  return (
+    count("loot_physical_v1", (v) => v) +
+    count("loot_stash_v1", (v) => (v && typeof v === "object" ? (v as { cards?: unknown }).cards : null))
+  );
 }
 
 /** Forget this device's sync bookkeeping (on sign-out or account deletion). */

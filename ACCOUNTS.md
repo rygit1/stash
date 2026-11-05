@@ -9,8 +9,20 @@ before upload, so Stash's server only ever stores data it can't read. The design
 
 ## How it works
 
-- **Sign in** with an email code (no password). Sign in with Apple and Google come later.
-- **Turning on sync** makes a random wallet key on the device and shows a **recovery code** once
+What the person sees:
+
+- **New account:** email → open the sign-in link → save the recovery code → their wallet.
+- **New device:** email → open the sign-in link → type the recovery code → their wallet, cards
+  already there.
+- **After that:** a small "🔒 Synced · N cards" badge in the corner keeps the wallet synced in the
+  background (every few seconds while the page is open). Cards added on one device show up on the
+  others by themselves. The Account page (tap the badge) has sign-out and delete-account.
+
+Under the hood:
+
+- **Sign in** with an email link (or a 6-digit code where the email template includes one). No
+  password. Sign in with Apple and Google come later.
+- **The first sign-in** makes a random wallet key on the device and shows a **recovery code** once
   (`STASH-XXXX-XXXX-XXXX-XXXX-XXXX`). A copy of the wallet key, locked with that code, is uploaded.
 - **Each part of the wallet** (the localStorage keys in `SYNC_KEYS`, `lib/accountSync.ts`) is
   encrypted with AES-256-GCM before upload. The newest change wins.
@@ -23,7 +35,8 @@ before upload, so Stash's server only ever stores data it can't read. The design
 |---|---|
 | `lib/vault.ts` | Encryption: wallet key, recovery code, locking and unlocking (runs on the device) |
 | `lib/accountSync.ts` | Two-way sync between localStorage and the user's encrypted rows |
-| `app/account/page.tsx` | The Account page: sign in, recovery code, unlock, sync, sign out, delete |
+| `app/account/page.tsx` | The Account page: sign in, recovery code, unlock, sign out, delete |
+| `app/SyncBadge.tsx` | The corner badge on the wallet that syncs in the background |
 | `supabase/migrations/` | The tables, security rules and `delete_my_account()` |
 | `supabase/templates/` | The sign-in email (6-digit code plus a link) |
 
@@ -78,5 +91,6 @@ When you're done: press Ctrl+C in the `npm run dev` window, then run `npx supaba
 - [ ] Sign in with Apple (needs the Apple developer account) and Sign in with Google
 - [ ] Per-card sync instead of whole localStorage keys, so edits to different cards on two devices
       both survive
-- [ ] The wallet page refreshes itself after a sync (today: reopen the wallet)
+- [ ] Switch sign-in links back to the stricter PKCE flow (the prototype uses "implicit" so a link
+      works in any browser) and send a 6-digit code in the email
 - [ ] A security review of the encryption and the database rules

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "r
 import { merchantAction, nearbyMapsUrl } from "@/lib/merchants";
 import { decodeCardBarcode, frameQuality } from "@/lib/barcode";
 import { readCardText } from "@/lib/cardOcr";
+import { WALLET_SYNCED_EVENT } from "@/lib/accountSync";
+import SyncBadge from "./SyncBadge";
 import { code128Svg } from "@/lib/barcode128";
 
 type Found = {
@@ -223,6 +225,10 @@ function loadStash(): { cards: Found[]; stats: Stats } | null {
 }
 function persistStash(cards: Found[], stats: Stats) {
   try {
+    // Unchanged cards keep their saved copy as is: rewriting it with a new savedAt would look like a
+    // change to account sync and bounce between devices.
+    const prev = JSON.parse(localStorage.getItem(STASH_KEY) ?? "null") as { cards?: unknown; stats?: unknown } | null;
+    if (prev && JSON.stringify(prev.cards) === JSON.stringify(cards) && JSON.stringify(prev.stats) === JSON.stringify(stats)) return;
     localStorage.setItem(STASH_KEY, JSON.stringify({ cards, stats, savedAt: new Date().toISOString() }));
   } catch {
     /* private mode or full storage: the wallet still works for this visit */
@@ -420,13 +426,25 @@ export default function Home() {
   }, []);
 
   // Load after mount so the SSR'd landing markup matches the first client render.
+  // walletVersion remounts the wallet so it re-reads its saved notes (used, spent, checked).
+  const [walletVersion, setWalletVersion] = useState(0);
   useEffect(() => {
-    setPhysical(loadPhysical());
-    const saved = loadStash();
-    if (saved) {
-      setCards(saved.cards);
-      setStats(saved.stats);
-    }
+    const load = () => {
+      setPhysical(loadPhysical());
+      const saved = loadStash();
+      if (saved) {
+        setCards(saved.cards);
+        setStats(saved.stats);
+      }
+    };
+    load();
+    // Accounts prototype: another device's changes just synced in (see app/SyncBadge.tsx).
+    const onSynced = () => {
+      load();
+      setWalletVersion((v) => v + 1);
+    };
+    window.addEventListener(WALLET_SYNCED_EVENT, onSynced);
+    return () => window.removeEventListener(WALLET_SYNCED_EVENT, onSynced);
   }, []);
   // Keep the latest Gmail scan on this device, so countdowns and reminders are still there next time.
   // Only after a scan has happened (stats set); "Clear all gift cards" removes it with the rest.
@@ -475,6 +493,10 @@ export default function Home() {
       setError(p.get("error"));
       setStage("error");
       window.history.replaceState({}, "", "/");
+    } else if (p.get("wallet") === "1") {
+      // Accounts prototype: back from signing in on the account page, go straight to the wallet.
+      window.history.replaceState({}, "", "/");
+      setStage("wallet");
     } else if (p.get("connected") === "1") {
       window.history.replaceState({}, "", "/");
       setStage("scanning");
@@ -585,6 +607,8 @@ export default function Home() {
   // 440px wallet column, a wallet should look like a wallet, so it stays narrow.
   if (stage === "landing") {
     return (
+      <>
+      <SyncBadge />
       <Landing
         physicalCount={physical.length + cards.length}
         onOpenWallet={() => {
@@ -596,14 +620,17 @@ export default function Home() {
           setStage("wallet");
         }}
       />
+      </>
     );
   }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col px-5">
       {stage === "scanning" && <Scanning />}
+      <SyncBadge />
       {stage === "wallet" && (
         <Wallet
+          key={walletVersion}
           cards={cards}
           stats={stats}
           physical={physical}
