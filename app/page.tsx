@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { merchantAction, nearbyMapsUrl } from "@/lib/merchants";
 import { decodeCardBarcode, frameQuality } from "@/lib/barcode";
-import { readCardText } from "@/lib/cardOcr";
+import { readCardText, lastRead, type ReadInfo } from "@/lib/cardOcr";
 import { nativeScanAvailable, scanBarcodeNatively, takePhotoNatively } from "@/lib/nativeScan";
 import { WALLET_SYNCED_EVENT } from "@/lib/accountSync";
 import SyncBadge from "./SyncBadge";
@@ -2326,6 +2326,7 @@ function PlasticScanner({
   const nativeCodeRef = useRef<string | null>(null);
   // Phone app: why the last photo didn't fill anything in (camera didn't open, nothing readable).
   const [photoNote, setPhotoNote] = useState<string | null>(null);
+  const [readInfo, setReadInfo] = useState<ReadInfo | null>(null); // phone app: "What Stash read"
   // ── Auto-capture (check-deposit style): the loop snaps a good frame by itself ──────────────
   const [scanHint, setScanHint] = useState<"looking" | "steady" | "got">("looking"); // live status copy
   const capturedRef = useRef(false); // fires exactly once per camera session
@@ -2425,6 +2426,7 @@ function PlasticScanner({
     setBarcode(null);
     nativeCodeRef.current = null;
     setPhotoNote(null);
+    setReadInfo(null);
   };
 
   useEffect(() => {
@@ -2600,6 +2602,7 @@ function PlasticScanner({
       setReaderDown(false);
       setReadingText("number");
       const read = await readCardText(dataUrl);
+      setReadInfo(lastRead);
       setReadingText(null);
       if (!read) setPhotoNote("Stash couldn't read the text on that photo. Type the details in, or try again in brighter light.");
       if (read) {
@@ -2637,6 +2640,7 @@ function PlasticScanner({
     // that fills is a guess and is flagged amber; the person can still type over it.
     setReadingText("store");
     const read = await readCardText(dataUrl, { wordsOnly: true, timeoutMs: 20_000 });
+    setReadInfo(lastRead);
     setReadingText(null);
     if (!read) setPhotoNote("Stash couldn't read the text on that photo. Type the PIN and store in, or try again in brighter light.");
     else if (!read.store && !read.pin) setPhotoNote("Couldn't make out the PIN or store in that photo. Try again closer and in brighter light, or type them in.");
@@ -2850,6 +2854,16 @@ function PlasticScanner({
                     print) is printed on the back, so one photo of the back fills both in. */}
                 {photoNote && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] leading-relaxed text-amber-800">{photoNote}</div>
+                )}
+                {/* Phone app (prototype): what the text reader actually saw, to see why a card didn't fill in. */}
+                {readInfo && nativeScanAvailable() && (
+                  <details className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
+                    <summary className="cursor-pointer font-semibold">
+                      What Stash read ({readInfo.reader} reader{readInfo.error ? ", failed" : `, ${readInfo.text.split("\n").filter(Boolean).length} lines`})
+                    </summary>
+                    {readInfo.error && <p className="mt-2 text-amber-700">Error: {readInfo.error}</p>}
+                    <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px]">{readInfo.text || "(no text found)"}</pre>
+                  </details>
                 )}
                 {nativeCodeRef.current && (shots.length === 0 || photoNote) && (
                   <button

@@ -16,6 +16,10 @@ import { findStoreName } from "./giftStores";
 const TextReader = registerPlugin<{ read(options: { image: string }): Promise<{ text: string }> }>("TextReader");
 const phoneCanRead = () => Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("TextReader");
 
+/** What the last read saw, so the phone app can show "What Stash read" when a card doesn't fill in. */
+export type ReadInfo = { reader: "iPhone" | "web"; text: string; error: string | null };
+export let lastRead: ReadInfo | null = null;
+
 export type CardText = { code: string | null; pin: string | null; store: string | null };
 
 let workerPromise: Promise<Worker> | null = null;
@@ -180,11 +184,21 @@ export async function readCardText(
   { wordsOnly = false, timeoutMs = 45_000 }: { wordsOnly?: boolean; timeoutMs?: number } = {},
 ): Promise<CardText | null> {
   const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
+  lastRead = null;
   if (phoneCanRead()) {
     const phoneRead = TextReader.read({ image: dataUrl })
-      .then(({ text }) => parseCardText(text))
-      .catch(() => null);
-    return Promise.race([phoneRead, timeout]);
+      .then(({ text }) => {
+        lastRead = { reader: "iPhone", text, error: null };
+        return parseCardText(text);
+      })
+      .catch((e: unknown) => {
+        lastRead = { reader: "iPhone", text: "", error: e instanceof Error ? e.message : String(e) };
+        return null;
+      });
+    return Promise.race([phoneRead, timeout]).then((r) => {
+      lastRead ??= { reader: "iPhone", text: "", error: "took too long" };
+      return r;
+    });
   }
   const read = (async () => {
     try {
@@ -203,10 +217,15 @@ export async function readCardText(
         await pass(strong, digits, 1.5);
         await pass(await enhance(dataUrl, 1.5), digits, 1.5);
       }
+      lastRead = { reader: "web", text: texts.map((t) => t.text).join("\n---\n"), error: null };
       return parseCardText(texts);
-    } catch {
+    } catch (e) {
+      lastRead = { reader: "web", text: "", error: e instanceof Error ? e.message : String(e) };
       return null;
     }
   })();
-  return Promise.race([read, timeout]);
+  return Promise.race([read, timeout]).then((r) => {
+    lastRead ??= { reader: "web", text: "", error: "took too long" };
+    return r;
+  });
 }
