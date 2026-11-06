@@ -11,13 +11,22 @@ export function nativeScanAvailable(): boolean {
   return Capacitor.isNativePlatform();
 }
 
+/**
+ * A short all-digit code (3 to 10 digits) is a PIN or security code, not a card number: card
+ * numbers are 12+ characters. Some cards (Starbucks, for one) carry a small second code next to the
+ * card-number barcode, and the scanner reads whichever it sees first.
+ */
+export function looksLikePin(scanned: string): boolean {
+  return /^\d{3,10}$/.test(scanned.trim());
+}
+
 /** The barcode's contents, or null if the person closed the scanner without scanning one. */
-export async function scanBarcodeNatively(): Promise<string | null> {
+export async function scanBarcodeNatively(instructions = "Point at the barcode on your gift card"): Promise<string | null> {
   const { CapacitorBarcodeScanner, CapacitorBarcodeScannerTypeHint } = await import("@capacitor/barcode-scanner");
   try {
     const result = await CapacitorBarcodeScanner.scanBarcode({
       hint: CapacitorBarcodeScannerTypeHint.ALL,
-      scanInstructions: "Point at the barcode on your gift card",
+      scanInstructions: instructions,
       scanButton: false,
       cancelButtonAccessibilityLabel: "Cancel",
       torchButtonOnAccessibilityLabel: "Turn off the light",

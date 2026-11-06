@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "r
 import { merchantAction, nearbyMapsUrl } from "@/lib/merchants";
 import { decodeCardBarcode, frameQuality } from "@/lib/barcode";
 import { readCardText, lastRead, type ReadInfo } from "@/lib/cardOcr";
-import { nativeScanAvailable, scanBarcodeNatively, takePhotoNatively } from "@/lib/nativeScan";
+import { looksLikePin, nativeScanAvailable, scanBarcodeNatively, takePhotoNatively } from "@/lib/nativeScan";
 import { WALLET_SYNCED_EVENT } from "@/lib/accountSync";
 import SyncBadge from "./SyncBadge";
 import { code128Svg } from "@/lib/barcode128";
@@ -2353,7 +2353,7 @@ function PlasticScanner({
     }
   };
   const pick = () => start("front");
-  const pickBack = () => start("back");
+  const pickBack = () => (nativeScanAvailable() ? pickPhoto() : start("back"));
   // A photo from the phone's camera sheet (or library), skipping the barcode scanner.
   // In the phone app this opens the phone's camera directly.
   const pickPhoto = () => {
@@ -2384,14 +2384,30 @@ function PlasticScanner({
   async function nativeScan() {
     nativeCodeRef.current = null;
     setPhotoNote(null);
-    const scanned = await scanBarcodeNatively();
+    let scanned = await scanBarcodeNatively();
+    // Grabbed the card's small PIN code instead of the card number? Keep it as the PIN and ask
+    // for the long barcode.
+    let pinGuess: string | null = null;
+    if (scanned && looksLikePin(scanned)) {
+      pinGuess = scanned;
+      const again = await scanBarcodeNatively("Got the PIN. Now aim at the barcode next to the long card number");
+      scanned = again && !looksLikePin(again) ? again : null;
+    }
     setOpen(true);
     setPreview(null);
     setShots([]);
-    setStore(""); setAmount(""); setPin(""); setExpires("");
+    setStore(""); setAmount(""); setExpires("");
+    setPin(pinGuess ?? "");
     if (!scanned) {
       setCode("");
       setBarcode(null);
+      if (pinGuess) {
+        setShaky({ pin: true });
+        setReaderDown(false);
+        setPhotoNote("Got the PIN, but not the card number. Snap the back of the card to read it, or type it in.");
+        setPhase("confirm");
+        return;
+      }
       setPhase("nobarcode");
       return;
     }
@@ -2400,7 +2416,7 @@ function PlasticScanner({
     setCode(scanned);
     setConfidence("low");
     setIssue(null);
-    setShaky({ code: false }); // read off the barcode: exact
+    setShaky({ code: false, pin: Boolean(pinGuess) }); // the number is exact; a short code is only probably the PIN
     setReaderDown(true);
     setPhase("confirm");
   }
@@ -2595,7 +2611,8 @@ function PlasticScanner({
     // On the back side, keep what the front shot (or the person) already filled in.
     if (!decoded) {
       const isBack = nextShots.length > 1;
-      if (!isBack) {
+      // In the phone app the scanner already started a fresh card, and may have found the PIN.
+      if (!isBack && !nativeScanAvailable()) {
         setStore(""); setCode(""); setPin(""); setAmount(""); setExpires("");
         setShaky({});
       }
