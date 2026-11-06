@@ -126,6 +126,28 @@ Marking a card used, or deleting it, cancels its reminders.
 3. Check the number, then tap **📷 Snap the back of the card** to read the PIN and store (or type them).
 4. Close the scanner with ✕ to try the no-barcode path: take a photo or type it in.
 
+## Getting updates: `npm run phone`
+
+One command does everything after new code is pushed:
+
+```bash
+cd ~/Desktop/stash-test
+npm run phone
+```
+
+It remembers the Team you picked in Xcode, undoes the two files that change by themselves (so
+`git pull` can't get stuck), downloads the latest code, installs anything new, puts your Team back,
+finds your Wi-Fi address and updates the iPhone app. Then restart `npm run dev -- -H 0.0.0.0` and
+press ▶ in Xcode.
+
+## Accounts on the phone need https
+
+The wallet is encrypted with the browser's built-in encryption, which iPhones only allow on https
+pages. While the app loads Stash from your Mac (`http://192.168.x.x`), the Account page says
+"Accounts need a secure connection". The real app loads `https://stashinc.pro`, where it works.
+To test accounts on the phone, point the app at an https copy of Stash (for example a Vercel
+preview of this branch): `CAP_SERVER_URL=https://… npx cap sync ios`.
+
 ## When you change code
 
 - Web code (pages, `lib/`, `app/`): just save. The app loads the dev server, so pull to refresh or

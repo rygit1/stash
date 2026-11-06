@@ -2602,7 +2602,7 @@ function PlasticScanner({
       setReaderDown(false);
       setReadingText("number");
       const read = await readCardText(dataUrl);
-      setReadInfo(lastRead);
+      setReadInfo(read?.code && read.store ? null : lastRead);
       setReadingText(null);
       if (!read) setPhotoNote("Stash couldn't read the text on that photo. Type the details in, or try again in brighter light.");
       if (read) {
@@ -2640,7 +2640,7 @@ function PlasticScanner({
     // that fills is a guess and is flagged amber; the person can still type over it.
     setReadingText("store");
     const read = await readCardText(dataUrl, { wordsOnly: true, timeoutMs: 20_000 });
-    setReadInfo(lastRead);
+    setReadInfo(read?.store && read.pin ? null : lastRead); // only when something's missing
     setReadingText(null);
     if (!read) setPhotoNote("Stash couldn't read the text on that photo. Type the PIN and store in, or try again in brighter light.");
     else if (!read.store && !read.pin) setPhotoNote("Couldn't make out the PIN or store in that photo. Try again closer and in brighter light, or type them in.");
@@ -2855,7 +2855,7 @@ function PlasticScanner({
                 {photoNote && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] leading-relaxed text-amber-800">{photoNote}</div>
                 )}
-                {/* Phone app (prototype): what the text reader actually saw, to see why a card didn't fill in. */}
+                {/* Phone app: when a photo left something out, what the text reader actually saw. */}
                 {readInfo && nativeScanAvailable() && (
                   <details className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
                     <summary className="cursor-pointer font-semibold">

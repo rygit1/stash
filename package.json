@@ -8,7 +8,8 @@
     "prebuild": "node scripts/copy-ocr-assets.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "phone": "node scripts/phone.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
