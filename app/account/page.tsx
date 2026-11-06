@@ -29,6 +29,7 @@ import {
 type Phase =
   | { kind: "loading" }
   | { kind: "off" }
+  | { kind: "insecure" }
   | { kind: "signedOut" }
   | { kind: "checkEmail"; email: string }
   | { kind: "saveCode"; code: string; key: CryptoKey; replacing: boolean }
@@ -75,6 +76,13 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!sb) return;
+    // The wallet is encrypted with the browser's built-in encryption, which only works on secure
+    // (https) pages. The live site and the real app are https; the phone app while testing against a
+    // Mac (http://192.168.x.x, see MOBILE.md) is not, so say so instead of failing halfway.
+    if (!window.isSecureContext || !window.crypto?.subtle) {
+      setPhase({ kind: "insecure" }); // eslint-disable-line react-hooks/set-state-in-effect
+      return;
+    }
     void sb.auth.getSession().then(({ data }) => resolve(data.session?.user ?? null));
     const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
       // Defer: the Supabase client must not be called from inside this callback.
@@ -112,6 +120,18 @@ export default function AccountPage() {
           <>
             <Title>Accounts are coming soon</Title>
             <p>For now, your cards stay on this device.</p>
+          </>
+        )}
+
+        {phase.kind === "insecure" && (
+          <>
+            <Title>Accounts need a secure connection</Title>
+            <p>
+              Your wallet is encrypted on this device, and phones only allow that on secure (https) pages. This
+              test version is loading Stash from a computer without https, so accounts can&rsquo;t work here. The
+              real app can.
+            </p>
+            <p className="mt-2 text-sm text-zinc-500">Your cards on this device are still saved.</p>
           </>
         )}
 
