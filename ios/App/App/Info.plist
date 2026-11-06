@@ -84,6 +84,8 @@
 	<string>Stash uses the camera to scan your gift cards. Photos stay on your phone.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Stash can read a gift card from a photo you choose.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Stash doesn't save photos to your library.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

@@ -29,3 +29,30 @@ export async function scanBarcodeNatively(): Promise<string | null> {
     return null; // closed / cancelled
   }
 }
+
+/**
+ * A photo from the phone's camera as a JPEG data URL (at most 2200px, like the website's photos),
+ * or null if the person closed the camera. Throws with the reason if the camera couldn't open, so
+ * the scanner can say so instead of silently doing nothing.
+ * Uses getPhoto (deprecated in this plugin version but supported) because it hands the photo back
+ * as data; the newer takePhoto returns a file link this app can't read when testing from a Mac.
+ */
+export async function takePhotoNatively(): Promise<string | null> {
+  const { Camera, CameraResultType, CameraSource } = await import("@capacitor/camera");
+  try {
+    const photo = await Camera.getPhoto({
+      source: CameraSource.Camera,
+      resultType: CameraResultType.DataUrl,
+      quality: 90,
+      width: 2200,
+      height: 2200,
+      correctOrientation: true,
+      saveToGallery: false,
+    });
+    return photo.dataUrl ?? null;
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
+    if (/cancel/i.test(reason)) return null;
+    throw new Error(reason || "unknown error");
+  }
+}

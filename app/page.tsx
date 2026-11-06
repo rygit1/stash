@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "r
 import { merchantAction, nearbyMapsUrl } from "@/lib/merchants";
 import { decodeCardBarcode, frameQuality } from "@/lib/barcode";
 import { readCardText } from "@/lib/cardOcr";
-import { nativeScanAvailable, scanBarcodeNatively } from "@/lib/nativeScan";
+import { nativeScanAvailable, scanBarcodeNatively, takePhotoNatively } from "@/lib/nativeScan";
 import { WALLET_SYNCED_EVENT } from "@/lib/accountSync";
 import SyncBadge from "./SyncBadge";
 import { code128Svg } from "@/lib/barcode128";
@@ -2324,6 +2324,8 @@ function PlasticScanner({
   // Phone app only: the number the phone's own barcode scanner read (exact). A photo taken after it
   // is only for the store name, PIN and the card picture.
   const nativeCodeRef = useRef<string | null>(null);
+  // Phone app: why the last photo didn't fill anything in (camera didn't open, nothing readable).
+  const [photoNote, setPhotoNote] = useState<string | null>(null);
   // ── Auto-capture (check-deposit style): the loop snaps a good frame by itself ──────────────
   const [scanHint, setScanHint] = useState<"looking" | "steady" | "got">("looking"); // live status copy
   const capturedRef = useRef(false); // fires exactly once per camera session
@@ -2352,15 +2354,35 @@ function PlasticScanner({
   const pick = () => start("front");
   const pickBack = () => start("back");
   // A photo from the phone's camera sheet (or library), skipping the barcode scanner.
+  // In the phone app this opens the phone's camera directly.
   const pickPhoto = () => {
     pickTarget.current = "front";
+    if (nativeScanAvailable()) {
+      void nativePhoto();
+      return;
+    }
     fileRef.current?.click();
   };
+
+  async function nativePhoto() {
+    setPhotoNote(null);
+    let dataUrl: string | null;
+    try {
+      dataUrl = await takePhotoNatively();
+    } catch (e) {
+      setPhotoNote(`The camera didn't open (${e instanceof Error ? e.message : String(e)}). You can type the details in instead.`);
+      return;
+    }
+    if (!dataUrl) return; // closed the camera
+    setOpen(true);
+    await processShot(dataUrl);
+  }
 
   // Phone app: scan the barcode live with the phone's scanner, then confirm. Closing the scanner
   // without a barcode offers a photo or typing it in.
   async function nativeScan() {
     nativeCodeRef.current = null;
+    setPhotoNote(null);
     const scanned = await scanBarcodeNatively();
     setOpen(true);
     setPreview(null);
@@ -2402,6 +2424,7 @@ function PlasticScanner({
     setExpires("");
     setBarcode(null);
     nativeCodeRef.current = null;
+    setPhotoNote(null);
   };
 
   useEffect(() => {
@@ -2578,6 +2601,7 @@ function PlasticScanner({
       setReadingText("number");
       const read = await readCardText(dataUrl);
       setReadingText(null);
+      if (!read) setPhotoNote("Stash couldn't read the text on that photo. Type the details in, or try again in brighter light.");
       if (read) {
         if (read.code) setCode((prev) => prev || read.code!);
         if (read.pin) setPin((prev) => prev || read.pin!);
@@ -2614,6 +2638,9 @@ function PlasticScanner({
     setReadingText("store");
     const read = await readCardText(dataUrl, { wordsOnly: true, timeoutMs: 20_000 });
     setReadingText(null);
+    if (!read) setPhotoNote("Stash couldn't read the text on that photo. Type the PIN and store in, or try again in brighter light.");
+    else if (!read.store && !read.pin) setPhotoNote("Couldn't make out the PIN or store in that photo. Try again closer and in brighter light, or type them in.");
+    else setPhotoNote(null);
     if (read?.store) setStore((prev) => prev || read.store!);
     if (read?.pin) setPin((prev) => prev || read.pin!);
     setShaky((prev) => ({
@@ -2820,12 +2847,15 @@ function PlasticScanner({
                 </label>
                 {/* Phone app: the barcode only holds the number. The PIN (and usually the store, in the fine
                     print) is printed on the back, so one photo of the back fills both in. */}
-                {nativeCodeRef.current && shots.length === 0 && (
+                {photoNote && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] leading-relaxed text-amber-800">{photoNote}</div>
+                )}
+                {nativeCodeRef.current && (shots.length === 0 || photoNote) && (
                   <button
                     onClick={pickPhoto}
                     className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-emerald-400 bg-emerald-50 px-3 py-2.5 text-emerald-800 transition active:scale-[0.98]"
                   >
-                    <span className="text-sm font-bold">📷 Snap the back of the card</span>
+                    <span className="text-sm font-bold">📷 {shots.length ? "Try the photo again" : "Snap the back of the card"}</span>
                     <span className="text-xs text-emerald-700">reads the PIN and store name for you</span>
                   </button>
                 )}
@@ -2879,6 +2909,7 @@ function PlasticScanner({
               <div className="mt-5 text-center">
                 <p className="text-sm font-medium text-zinc-700">No barcode on this card?</p>
                 <p className="mt-1 text-xs text-zinc-400">Take a photo and Stash reads the printed number instead.</p>
+                {photoNote && <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[13px] text-amber-800">{photoNote}</p>}
                 <button
                   onClick={pickPhoto}
                   className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-zinc-900 text-base font-semibold text-white transition active:scale-[0.98]"
