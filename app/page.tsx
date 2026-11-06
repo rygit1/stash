@@ -607,8 +607,6 @@ export default function Home() {
   // 440px wallet column, a wallet should look like a wallet, so it stays narrow.
   if (stage === "landing") {
     return (
-      <>
-      <SyncBadge />
       <Landing
         physicalCount={physical.length + cards.length}
         onOpenWallet={() => {
@@ -620,7 +618,6 @@ export default function Home() {
           setStage("wallet");
         }}
       />
-      </>
     );
   }
 

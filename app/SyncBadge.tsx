@@ -1,6 +1,6 @@
 "use client";
 
-// A small badge in the corner of the wallet that keeps it synced in the background (accounts
+// A small badge in the corner of the wallet (not the landing page, where it would cover the page) that keeps it synced in the background (accounts
 // prototype, see ACCOUNTS.md). Renders nothing unless accounts are configured, so the live site is
 // unaffected. When another device's changes arrive it fires WALLET_SYNCED_EVENT so the page can
 // re-read the wallet from localStorage.
@@ -87,7 +87,8 @@ export default function SyncBadge() {
     <Link
       href="/account"
       data-testid="sync-badge"
-      className="fixed bottom-4 right-4 z-50 rounded-full border border-zinc-200 bg-white/95 px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-md backdrop-blur transition hover:bg-white"
+      style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      className="fixed right-4 z-50 rounded-full border border-zinc-200 bg-white/95 px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-md backdrop-blur transition hover:bg-white"
     >
       {label}
     </Link>

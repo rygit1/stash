@@ -13,6 +13,8 @@ const config: CapacitorConfig = {
   // Only shown if the site can't be reached (see mobile/www/index.html).
   webDir: "mobile/www",
   server: devUrl ? { url: devUrl, cleartext: true } : { url: "https://stashinc.pro" },
+  // Keep pages below the iPhone clock/battery bar and above the home bar instead of under them.
+  ios: { contentInset: "always" },
   plugins: {
     LocalNotifications: { iconColor: "#10b981" },
   },

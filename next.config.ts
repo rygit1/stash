@@ -21,6 +21,8 @@ const nextConfig: NextConfig = {
   // Phone app testing (see MOBILE.md): lets the app on your iPhone load `next dev` from your Mac.
   // Set STASH_DEV_HOST to the Mac's Wi-Fi address (e.g. 192.168.1.142). Development only.
   allowedDevOrigins: process.env.STASH_DEV_HOST ? [process.env.STASH_DEV_HOST] : [],
+  // Testing on a phone (MOBILE.md): hide the Next.js dev button, which sits over the page there.
+  ...(process.env.STASH_DEV_HOST ? { devIndicators: false as const } : {}),
   pageExtensions: isDev ? ["dev.ts", "tsx", "ts", "jsx", "js"] : ["tsx", "ts", "jsx", "js"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
