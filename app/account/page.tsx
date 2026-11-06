@@ -10,6 +10,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Capacitor } from "@capacitor/core";
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { accounts, forgetSyncState, SYNC_KEYS, syncWallet, walletCardCount } from "@/lib/accountSync";
@@ -204,7 +205,11 @@ function SignIn({ busy, run, onSent }: { busy: boolean; run: Run; onSent: (email
         void run(async () => {
           const { error } = await accounts()!.auth.signInWithOtp({
             email: email.trim(),
-            options: { emailRedirectTo: `${window.location.origin}/account`, shouldCreateUser: true },
+            // In the phone app the email link has to open the app, not Safari (see app/NativeBridge.tsx).
+            options: {
+              emailRedirectTo: Capacitor.isNativePlatform() ? "pro.stashinc.app://account" : `${window.location.origin}/account`,
+              shouldCreateUser: true,
+            },
           });
           if (error) throw new Error(error.message);
           onSent(email.trim());

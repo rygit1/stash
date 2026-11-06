@@ -18,6 +18,9 @@ const isDev = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Phone app testing (see MOBILE.md): lets the app on your iPhone load `next dev` from your Mac.
+  // Set STASH_DEV_HOST to the Mac's Wi-Fi address (e.g. 192.168.1.142). Development only.
+  allowedDevOrigins: process.env.STASH_DEV_HOST ? [process.env.STASH_DEV_HOST] : [],
   pageExtensions: isDev ? ["dev.ts", "tsx", "ts", "jsx", "js"] : ["tsx", "ts", "jsx", "js"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
