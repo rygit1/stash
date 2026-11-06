@@ -2818,12 +2818,15 @@ function PlasticScanner({
                     className={inputCls}
                   />
                 </label>
+                {/* Phone app: the barcode only holds the number. The PIN (and usually the store, in the fine
+                    print) is printed on the back, so one photo of the back fills both in. */}
                 {nativeCodeRef.current && shots.length === 0 && (
                   <button
                     onClick={pickPhoto}
-                    className="flex h-11 w-full items-center justify-center rounded-xl border border-dashed border-emerald-300 bg-emerald-50 text-sm font-semibold text-emerald-700 transition active:scale-[0.98]"
+                    className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-emerald-400 bg-emerald-50 px-3 py-2.5 text-emerald-800 transition active:scale-[0.98]"
                   >
-                    📷 Snap the front to fill in the store
+                    <span className="text-sm font-bold">📷 Snap the back of the card</span>
+                    <span className="text-xs text-emerald-700">reads the PIN and store name for you</span>
                   </button>
                 )}
                 {!nativeCodeRef.current && shots.length < 2 && (!code.trim() || !pin.trim()) && (

@@ -10,8 +10,8 @@ The same pages run inside it, plus two things only a phone can do:
   finishes signing in.
 - **Live barcode scanner.** "Scan a plastic card" opens the phone's own scanner
   ([@capacitor/barcode-scanner](https://capacitorjs.com/docs/apis/barcode-scanner)), which reads the
-  barcode straight from the camera (`lib/nativeScan.ts`). An optional photo of the front then fills
-  in the store name. Cards with no barcode fall back to a photo, as on the website.
+  barcode straight from the camera (`lib/nativeScan.ts`). An optional photo of the back then fills
+  in the PIN and store name. Cards with no barcode fall back to a photo, as on the website.
 
 In a normal browser `NativeBridge` does nothing, so the website is unchanged.
 
@@ -123,7 +123,7 @@ Marking a card used, or deleting it, cancels its reminders.
 
 1. Tap **📷 Scan a plastic card**. The first time, tap **Allow** for the camera.
 2. Point at the barcode on the back of a gift card. It reads by itself.
-3. Check the number, then tap **📷 Snap the front to fill in the store** (or type it).
+3. Check the number, then tap **📷 Snap the back of the card** to read the PIN and store (or type them).
 4. Close the scanner with ✕ to try the no-barcode path: take a photo or type it in.
 
 ## When you change code
