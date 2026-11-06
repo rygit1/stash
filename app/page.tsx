@@ -857,6 +857,16 @@ function Landing({
                 <span className="rounded-full bg-emerald-600 px-1.5 text-xs text-white">{physicalCount}</span>
               </button>
             )}
+            {/* Accounts prototype: only where it's configured (see ACCOUNTS.md), never on the live site.
+                Lets a new device (e.g. the phone app, which starts empty) sign in and pull its cards. */}
+            {process.env.NEXT_PUBLIC_SUPABASE_URL && physicalCount === 0 && (
+              <a
+                href="/account"
+                className="inline-flex h-10 items-center rounded-xl border border-zinc-200 bg-white px-3.5 text-sm font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 active:scale-[0.98]"
+              >
+                Sign in
+              </a>
+            )}
             <a
               href="/api/google/start"
               className="inline-flex h-10 items-center gap-2 rounded-xl bg-zinc-900 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98] sm:px-4"
