@@ -8,7 +8,13 @@
 // it returns as "check this one", never as exact (unlike a barcode, which is exact).
 
 import type { Worker } from "tesseract.js";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { findStoreName } from "./giftStores";
+
+// In the phone app (see MOBILE.md) the iPhone's own text recognition does the reading instead
+// (ios/App/App/TextReaderPlugin.swift, Apple's Vision framework): far more accurate on real cards.
+const TextReader = registerPlugin<{ read(options: { image: string }): Promise<{ text: string }> }>("TextReader");
+const phoneCanRead = () => Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("TextReader");
 
 export type CardText = { code: string | null; pin: string | null; store: string | null };
 
@@ -123,13 +129,30 @@ function votePin(texts: string[], code: string | null): string | null {
   return mostCommon(found);
 }
 
+// No "PIN" label: many cards (Starbucks, for one) print the security code on its own line right under
+// the card number. Only a line that is nothing but 4 to 8 digits counts.
+function pinUnderCode(texts: string[], code: string | null): string | null {
+  if (!code) return null;
+  const found: string[] = [];
+  for (const text of texts) {
+    const lines = text.split("\n").map((l) => l.trim());
+    lines.forEach((line, i) => {
+      const digits = toDigits(line.replace(/[\s-]/g, ""));
+      if (digits.length < 12 || !digits.includes(code.slice(-4))) return;
+      const next = (lines[i + 1] ?? "").replace(/\s/g, "");
+      if (/^\d{4,8}$/.test(next) && !code.includes(next)) found.push(next);
+    });
+  }
+  return mostCommon(found);
+}
+
 // Pure parser, exported for tests: combine one or more readings of the same card.
 // A plain string or string[] counts every reading equally; readCardText passes weights.
 export function parseCardText(texts: string | string[] | { text: string; weight: number }[]): CardText {
   const readings = (Array.isArray(texts) ? texts : [texts]).map((t) => (typeof t === "string" ? { text: t, weight: 1 } : t));
   const all = readings.map((r) => r.text);
   const code = voteCode(readings);
-  return { code, pin: votePin(all, code), store: findStoreName(all.join("\n")) };
+  return { code, pin: votePin(all, code) ?? pinUnderCode(all, code), store: findStoreName(all.join("\n")) };
 }
 
 // Grayscale, enlarged, higher-contrast copy of the photo: printed digits read much more reliably.
@@ -157,6 +180,12 @@ export async function readCardText(
   { wordsOnly = false, timeoutMs = 45_000 }: { wordsOnly?: boolean; timeoutMs?: number } = {},
 ): Promise<CardText | null> {
   const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
+  if (phoneCanRead()) {
+    const phoneRead = TextReader.read({ image: dataUrl })
+      .then(({ text }) => parseCardText(text))
+      .catch(() => null);
+    return Promise.race([phoneRead, timeout]);
+  }
   const read = (async () => {
     try {
       const worker = await getWorker();
