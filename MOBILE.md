@@ -8,6 +8,10 @@ The same pages run inside it, plus two things only a phone can do:
   phone, which schedules and shows them by itself. Nothing is sent to a server.
 - **Sign-in links open the app.** The email link goes to `pro.stashinc.app://account`, and the app
   finishes signing in.
+- **Live barcode scanner.** "Scan a plastic card" opens the phone's own scanner
+  ([@capacitor/barcode-scanner](https://capacitorjs.com/docs/apis/barcode-scanner)), which reads the
+  barcode straight from the camera (`lib/nativeScan.ts`). An optional photo of the front then fills
+  in the store name. Cards with no barcode fall back to a photo, as on the website.
 
 In a normal browser `NativeBridge` does nothing, so the website is unchanged.
 
@@ -115,6 +119,13 @@ arrives at 10am today. After 10am, the soonest one is the "expires today" remind
 
 Marking a card used, or deleting it, cancels its reminders.
 
+## Test the scanner
+
+1. Tap **📷 Scan a plastic card**. The first time, tap **Allow** for the camera.
+2. Point at the barcode on the back of a gift card. It reads by itself.
+3. Check the number, then tap **📷 Snap the front to fill in the store** (or type it).
+4. Close the scanner with ✕ to try the no-barcode path: take a photo or type it in.
+
 ## When you change code
 
 - Web code (pages, `lib/`, `app/`): just save. The app loads the dev server, so pull to refresh or
@@ -123,7 +134,6 @@ Marking a card used, or deleting it, cancels its reminders.
 
 ## Not done yet
 
-- Native card scanner (next).
 - Gmail in the app. It needs new Google sign-in clients for iOS and Android, so it waits until
   Google finishes reviewing the project.
 - App Store / Play Store release (needs the $99/year Apple developer account).

@@ -80,6 +80,10 @@
 	</array>
 	<!-- Stash: while testing, the app loads the site from the Mac over Wi-Fi (plain http on the local
 	     network only). Everything on the internet still has to be https. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Stash uses the camera to scan your gift cards. Photos stay on your phone.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Stash can read a gift card from a photo you choose.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

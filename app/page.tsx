@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "r
 import { merchantAction, nearbyMapsUrl } from "@/lib/merchants";
 import { decodeCardBarcode, frameQuality } from "@/lib/barcode";
 import { readCardText } from "@/lib/cardOcr";
+import { nativeScanAvailable, scanBarcodeNatively } from "@/lib/nativeScan";
 import { WALLET_SYNCED_EVENT } from "@/lib/accountSync";
 import SyncBadge from "./SyncBadge";
 import { code128Svg } from "@/lib/barcode128";
@@ -2297,7 +2298,7 @@ function PlasticScanner({
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [open, setOpen] = useState(false);
-  const [phase, setPhase] = useState<"camera" | "reading" | "backprompt" | "confirm" | "miss" | "dupe">("reading");
+  const [phase, setPhase] = useState<"camera" | "reading" | "backprompt" | "confirm" | "miss" | "dupe" | "nobarcode">("reading");
   const [missMsg, setMissMsg] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [store, setStore] = useState("");
@@ -2320,6 +2321,9 @@ function PlasticScanner({
   const [shots, setShots] = useState<string[]>([]); // [front] or [front, back], front is always the card face
   const [barcode, setBarcode] = useState<string | null>(null); // exact code read off a barcode/QR in any shot
   const pickTarget = useRef<"front" | "back">("front");
+  // Phone app only: the number the phone's own barcode scanner read (exact). A photo taken after it
+  // is only for the store name, PIN and the card picture.
+  const nativeCodeRef = useRef<string | null>(null);
   // ── Auto-capture (check-deposit style): the loop snaps a good frame by itself ──────────────
   const [scanHint, setScanHint] = useState<"looking" | "steady" | "got">("looking"); // live status copy
   const capturedRef = useRef(false); // fires exactly once per camera session
@@ -2329,8 +2333,13 @@ function PlasticScanner({
   const camStartRef = useRef(0); // ms timestamp the camera stream attached, drives the warmup grace window
 
   // Desktop (fine pointer) gets an in-page live camera; phones keep the native camera sheet.
+  // The phone app opens the phone's own live barcode scanner instead.
   const start = (target: "front" | "back") => {
     pickTarget.current = target;
+    if (target === "front" && nativeScanAvailable()) {
+      void nativeScan();
+      return;
+    }
     const inPageCamera =
       typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && !matchMedia("(pointer: coarse)").matches;
     if (inPageCamera) {
@@ -2342,6 +2351,36 @@ function PlasticScanner({
   };
   const pick = () => start("front");
   const pickBack = () => start("back");
+  // A photo from the phone's camera sheet (or library), skipping the barcode scanner.
+  const pickPhoto = () => {
+    pickTarget.current = "front";
+    fileRef.current?.click();
+  };
+
+  // Phone app: scan the barcode live with the phone's scanner, then confirm. Closing the scanner
+  // without a barcode offers a photo or typing it in.
+  async function nativeScan() {
+    nativeCodeRef.current = null;
+    const scanned = await scanBarcodeNatively();
+    setOpen(true);
+    setPreview(null);
+    setShots([]);
+    setStore(""); setAmount(""); setPin(""); setExpires("");
+    if (!scanned) {
+      setCode("");
+      setBarcode(null);
+      setPhase("nobarcode");
+      return;
+    }
+    nativeCodeRef.current = scanned;
+    setBarcode(scanned);
+    setCode(scanned);
+    setConfidence("low");
+    setIssue(null);
+    setShaky({ code: false }); // read off the barcode: exact
+    setReaderDown(true);
+    setPhase("confirm");
+  }
 
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -2362,6 +2401,7 @@ function PlasticScanner({
     setPin("");
     setExpires("");
     setBarcode(null);
+    nativeCodeRef.current = null;
   };
 
   useEffect(() => {
@@ -2520,7 +2560,8 @@ function PlasticScanner({
     setPreview(nextShots[0]);
 
     // THE BARCODE IS READ ON THIS DEVICE: free, offline, no key, and exact when it hits.
-    const decodedRaw = await decodeCardBarcode(dataUrl);
+    // In the phone app the live scanner may already have read it exactly.
+    const decodedRaw = nativeCodeRef.current ?? (await decodeCardBarcode(dataUrl));
     const decoded = decodedRaw ?? (nextShots.length > 1 ? barcode : null);
     setBarcode(decoded);
 
@@ -2554,7 +2595,8 @@ function PlasticScanner({
 
     // On the back side, keep what the front shot (or the person) already filled in.
     const isBack = nextShots.length > 1;
-    if (!isBack) {
+    // After a live scan, keep anything the person already typed on the confirm screen.
+    if (!isBack && !nativeCodeRef.current) {
       setStore("");
       setAmount("");
       setPin("");
@@ -2635,6 +2677,8 @@ function PlasticScanner({
               </button>
             </div>
 
+            {/* Phone app: no empty grey box before there's a photo (the live scanner takes none). */}
+            {(preview || phase === "camera" || phase === "reading" || !nativeScanAvailable()) && (
             <div
               className="relative mt-3 w-full overflow-hidden rounded-2xl bg-zinc-100"
               style={{
@@ -2668,6 +2712,7 @@ function PlasticScanner({
                 </div>
               )}
             </div>
+            )}
 
             {phase === "camera" && (
               <div className="mt-4 flex flex-col items-center gap-2">
@@ -2714,7 +2759,9 @@ function PlasticScanner({
                 <p className="text-xs text-zinc-400">
                   {Object.values(shaky).some(Boolean)
                     ? "The amber boxes are the ones it was unsure about. Check those against the real card."
-                    : confidence === "low"
+                    : nativeCodeRef.current
+                      ? "Check the number matches the card."
+                      : confidence === "low"
                       ? `${issue && ISSUE_MSG[issue] ? ISSUE_MSG[issue].split(",")[0].trim() + ", " : ""}fix anything wrong below, or retake.`
                       : "Check every digit against the real card, cameras can misread."}
                 </p>
@@ -2771,7 +2818,15 @@ function PlasticScanner({
                     className={inputCls}
                   />
                 </label>
-                {shots.length < 2 && (!code.trim() || !pin.trim()) && (
+                {nativeCodeRef.current && shots.length === 0 && (
+                  <button
+                    onClick={pickPhoto}
+                    className="flex h-11 w-full items-center justify-center rounded-xl border border-dashed border-emerald-300 bg-emerald-50 text-sm font-semibold text-emerald-700 transition active:scale-[0.98]"
+                  >
+                    📷 Snap the front to fill in the store
+                  </button>
+                )}
+                {!nativeCodeRef.current && shots.length < 2 && (!code.trim() || !pin.trim()) && (
                   <button
                     onClick={pickBack}
                     className="flex h-11 w-full items-center justify-center rounded-xl border border-dashed border-emerald-300 bg-emerald-50 text-sm font-semibold text-emerald-700 transition active:scale-[0.98]"
@@ -2787,7 +2842,7 @@ function PlasticScanner({
                   {saving ? "Adding…" : "Add to wallet"}
                 </button>
                 <button onClick={pick} className="text-center text-xs font-medium text-zinc-400 transition hover:text-zinc-600">
-                  retake photo
+                  {nativeCodeRef.current ? "scan again" : "retake photo"}
                 </button>
               </div>
             )}
@@ -2813,6 +2868,33 @@ function PlasticScanner({
                 </button>
                 <button onClick={close} className="mt-2 text-xs text-zinc-400 transition hover:text-zinc-600">
                   cancel
+                </button>
+              </div>
+            )}
+
+            {phase === "nobarcode" && (
+              <div className="mt-5 text-center">
+                <p className="text-sm font-medium text-zinc-700">No barcode on this card?</p>
+                <p className="mt-1 text-xs text-zinc-400">Take a photo and Stash reads the printed number instead.</p>
+                <button
+                  onClick={pickPhoto}
+                  className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-zinc-900 text-base font-semibold text-white transition active:scale-[0.98]"
+                >
+                  📷 Take a photo
+                </button>
+                <button
+                  onClick={pick}
+                  className="mt-2 flex h-11 w-full items-center justify-center rounded-xl border border-zinc-200 bg-white text-sm font-semibold text-zinc-700 transition active:scale-[0.98]"
+                >
+                  ‖ Try the barcode scanner again
+                </button>
+                <button
+                  onClick={() => {
+                    setShaky({}); setReaderDown(false); setPhase("confirm");
+                  }}
+                  className="mt-2 text-xs text-zinc-400 transition hover:text-zinc-600"
+                >
+                  type it in by hand
                 </button>
               </div>
             )}
