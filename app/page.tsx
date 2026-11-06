@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { merchantAction, nearbyMapsUrl } from "@/lib/merchants";
 import { decodeCardBarcode, frameQuality } from "@/lib/barcode";
-import { readCardText, lastRead, type ReadInfo } from "@/lib/cardOcr";
+import { readCardText, lastRead, parseCardText, phoneCanRead, readCardPhotoOnPhone, type ReadInfo } from "@/lib/cardOcr";
 import { looksLikePin, nativeScanAvailable, scanBarcodeNatively, takePhotoNatively } from "@/lib/nativeScan";
 import { WALLET_SYNCED_EVENT } from "@/lib/accountSync";
 import SyncBadge from "./SyncBadge";
@@ -2339,8 +2339,10 @@ function PlasticScanner({
   // The phone app opens the phone's own live barcode scanner instead.
   const start = (target: "front" | "back") => {
     pickTarget.current = target;
+    // The phone app: one photo of the card, which the iPhone reads in full (barcodes and text).
+    // Falls back to the live barcode scanner where the iPhone reader isn't there.
     if (target === "front" && nativeScanAvailable()) {
-      void nativeScan();
+      void (phoneCanRead() ? nativeSnap() : nativeScan());
       return;
     }
     const inPageCamera =
@@ -2377,6 +2379,66 @@ function PlasticScanner({
     if (!dataUrl) return; // closed the camera
     setOpen(true);
     await processShot(dataUrl);
+  }
+
+  // Phone app: a fresh card from one photo.
+  async function nativeSnap() {
+    nativeCodeRef.current = null;
+    setPhotoNote(null);
+    setReadInfo(null);
+    setStore(""); setCode(""); setPin(""); setAmount(""); setExpires("");
+    setBarcode(null);
+    setShaky({});
+    let dataUrl: string | null;
+    try {
+      dataUrl = await takePhotoNatively();
+    } catch (e) {
+      setOpen(true);
+      setMissMsg(`The camera didn't open (${e instanceof Error ? e.message : String(e)}).`);
+      setPhase("miss");
+      return;
+    }
+    if (!dataUrl) return; // closed the camera
+    setOpen(true);
+    await processShot(dataUrl);
+  }
+
+  // Phone app: everything from one photo. The iPhone finds every barcode (exact) and the printed
+  // text at once: the long barcode is the card number, a short one is the PIN, and the text gives
+  // the store (plus the number or PIN when there's no barcode for them). Another photo only adds to
+  // what's already filled in.
+  async function processOnPhone(dataUrl: string) {
+    setReadingText(null);
+    const r = await readCardPhotoOnPhone(dataUrl);
+    const codes = r?.barcodes ?? [];
+    const numberCode = codes.filter((c) => !looksLikePin(c)).sort((a, b) => b.length - a.length)[0] ?? null;
+    const pinCode = codes.find(looksLikePin) ?? null;
+    const parsed = r ? parseCardText(r.text) : null;
+    const exact = nativeCodeRef.current ?? numberCode;
+    if (exact) nativeCodeRef.current = exact;
+    setBarcode(exact);
+    if (exact) setCode(exact);
+    else if (parsed?.code) setCode((prev) => prev || parsed.code!);
+    const pinFound = pinCode ?? parsed?.pin ?? null;
+    if (pinFound) setPin((prev) => prev || pinFound);
+    if (parsed?.store) setStore((prev) => prev || parsed.store!);
+    setShaky((prev) => ({
+      ...prev,
+      code: exact ? false : prev.code || Boolean(parsed?.code), // a barcode is exact
+      pin: prev.pin || Boolean(pinFound), // a short code or printed digits: probably the PIN
+      store: prev.store || Boolean(parsed?.store),
+    }));
+    setReaderDown(Boolean(exact));
+    setConfidence("low");
+    setIssue(null);
+    const gotNumber = Boolean(exact || parsed?.code);
+    const missing = [!gotNumber && "card number", !parsed?.store && "store"].filter(Boolean) as string[];
+    if (!r) setPhotoNote("Stash couldn't read that photo. Try again, or type the details in.");
+    else if (missing.length) setPhotoNote(`Couldn't find the ${missing.join(" or ")} in that photo. Try again closer and in brighter light, or type ${missing.length > 1 ? "them" : "it"} in.`);
+    else if (!pinFound) setPhotoNote("No PIN found. If the card has one, try the photo again or type it in.");
+    else setPhotoNote(null);
+    setReadInfo(!r || missing.length || !pinFound ? lastRead : null);
+    setPhase("confirm");
   }
 
   // Phone app: scan the barcode live with the phone's scanner, then confirm. Closing the scanner
@@ -2599,6 +2661,10 @@ function PlasticScanner({
     const nextShots = target === "back" && shots.length ? [shots[0], dataUrl] : [dataUrl];
     setShots(nextShots);
     setPreview(nextShots[0]);
+    if (phoneCanRead()) {
+      await processOnPhone(dataUrl);
+      return;
+    }
 
     // THE BARCODE IS READ ON THIS DEVICE: free, offline, no key, and exact when it hits.
     // In the phone app the live scanner may already have read it exactly.

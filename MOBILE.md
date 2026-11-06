@@ -8,10 +8,12 @@ The same pages run inside it, plus two things only a phone can do:
   phone, which schedules and shows them by itself. Nothing is sent to a server.
 - **Sign-in links open the app.** The email link goes to `pro.stashinc.app://account`, and the app
   finishes signing in.
-- **Live barcode scanner.** "Scan a plastic card" opens the phone's own scanner
-  ([@capacitor/barcode-scanner](https://capacitorjs.com/docs/apis/barcode-scanner)), which reads the
-  barcode straight from the camera (`lib/nativeScan.ts`). An optional photo of the back then fills
-  in the PIN and store name. Cards with no barcode fall back to a photo, as on the website.
+- **One-photo card scanner.** "Scan a plastic card" takes one photo of the card with the phone's
+  camera (@capacitor/camera), and the iPhone reads all of it at once with Apple's Vision framework
+  (`ios/App/App/TextReaderPlugin.swift`): every barcode (the long one is the card number, exact; a
+  short one is the PIN) and the printed text (store name, and the number or PIN when there's no
+  barcode for them). Nothing is uploaded. Where that reader isn't available, the live barcode
+  scanner (@capacitor/barcode-scanner, `lib/nativeScan.ts`) is used instead.
 
 In a normal browser `NativeBridge` does nothing, so the website is unchanged.
 
@@ -122,10 +124,10 @@ Marking a card used, or deleting it, cancels its reminders.
 ## Test the scanner
 
 1. Tap **📷 Scan a plastic card**. The first time, tap **Allow** for the camera.
-2. Point at the barcode on the back of a gift card. It reads by itself.
-3. Check the number, then tap **📷 Snap the back of the card** to read the PIN and store (or type them).
-4. Close the scanner with ✕ to try the no-barcode path: take a photo or type it in.
-
+2. Take one photo of the **back** of the card: flat, in good light, filling the frame.
+3. The number (from the barcode), PIN and store fill in. Check the amber "check this one" boxes.
+4. If something's missing, a note says what, with **📷 Try the photo again**. Tap
+   **What Stash read** to see what the iPhone found.
 ## Getting updates: `npm run phone`
 
 One command does everything after new code is pushed:

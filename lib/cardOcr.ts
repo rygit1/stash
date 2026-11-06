@@ -13,12 +13,36 @@ import { findStoreName } from "./giftStores";
 
 // In the phone app (see MOBILE.md) the iPhone's own text recognition does the reading instead
 // (ios/App/App/TextReaderPlugin.swift, Apple's Vision framework): far more accurate on real cards.
-const TextReader = registerPlugin<{ read(options: { image: string }): Promise<{ text: string }> }>("TextReader");
-const phoneCanRead = () => Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("TextReader");
+const TextReader = registerPlugin<{
+  read(options: { image: string }): Promise<{ text: string; barcodes?: { value: string; type: string }[] }>;
+}>("TextReader");
+export const phoneCanRead = () => Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("TextReader");
 
 /** What the last read saw, so the phone app can show "What Stash read" when a card doesn't fill in. */
 export type ReadInfo = { reader: "iPhone" | "web"; text: string; error: string | null };
 export let lastRead: ReadInfo | null = null;
+
+/**
+ * Phone app only: everything the iPhone finds in one card photo, the printed text and every
+ * barcode's contents (exact). Null if it couldn't read the photo (see lastRead for why).
+ */
+export async function readCardPhotoOnPhone(dataUrl: string, timeoutMs = 20_000): Promise<{ text: string; barcodes: string[] } | null> {
+  lastRead = null;
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
+  const read = TextReader.read({ image: dataUrl })
+    .then(({ text, barcodes }) => {
+      const codes = (barcodes ?? []).map((b) => b.value.trim()).filter(Boolean);
+      lastRead = { reader: "iPhone", text: codes.length ? `${text}\n--- barcodes ---\n${codes.join("\n")}` : text, error: null };
+      return { text, barcodes: codes };
+    })
+    .catch((e: unknown) => {
+      lastRead = { reader: "iPhone", text: "", error: e instanceof Error ? e.message : String(e) };
+      return null;
+    });
+  const r = await Promise.race([read, timeout]);
+  lastRead ??= { reader: "iPhone", text: "", error: "took too long" };
+  return r;
+}
 
 export type CardText = { code: string | null; pin: string | null; store: string | null };
 
@@ -186,19 +210,8 @@ export async function readCardText(
   const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
   lastRead = null;
   if (phoneCanRead()) {
-    const phoneRead = TextReader.read({ image: dataUrl })
-      .then(({ text }) => {
-        lastRead = { reader: "iPhone", text, error: null };
-        return parseCardText(text);
-      })
-      .catch((e: unknown) => {
-        lastRead = { reader: "iPhone", text: "", error: e instanceof Error ? e.message : String(e) };
-        return null;
-      });
-    return Promise.race([phoneRead, timeout]).then((r) => {
-      lastRead ??= { reader: "iPhone", text: "", error: "took too long" };
-      return r;
-    });
+    const r = await readCardPhotoOnPhone(dataUrl, timeoutMs);
+    return r ? parseCardText(r.text) : null;
   }
   const read = (async () => {
     try {
