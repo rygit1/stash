@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "r
 import { merchantAction, nearbyMapsUrl } from "@/lib/merchants";
 import { decodeCardBarcode, frameQuality } from "@/lib/barcode";
 import { readCardText, lastRead, parseCardText, phoneCanRead, readCardPhotoOnPhone, type ReadInfo } from "@/lib/cardOcr";
+import { linkDomain, safeLink, withCodeFromLink } from "@/lib/cardLinks";
 import { looksLikePin, nativeScanAvailable, scanBarcodeNatively, takePhotoNatively } from "@/lib/nativeScan";
 import { WALLET_SYNCED_EVENT } from "@/lib/accountSync";
 import SyncBadge from "./SyncBadge";
@@ -218,7 +219,8 @@ function loadStash(): { cards: Found[]; stats: Stats } | null {
     const raw = JSON.parse(localStorage.getItem(STASH_KEY) ?? "null") as { cards?: unknown; stats?: unknown } | null;
     if (!raw || !Array.isArray(raw.cards) || !raw.stats || typeof raw.stats !== "object") return null;
     // Recompute anything time-based: a card saved last week may be expiring now.
-    const cards = (raw.cards as Found[]).map((c) => ({ ...c, expiring: isExpiringSoon(c.expires) }));
+    // Codes carried inside a card's redeem link fill in cards saved before that was read.
+    const cards = (raw.cards as Found[]).map((c) => withCodeFromLink({ ...c, expiring: isExpiringSoon(c.expires) }));
     return { cards, stats: raw.stats as Stats };
   } catch {
     return null;
@@ -528,7 +530,7 @@ export default function Home() {
       }
       const data = await r.json();
       type Raw = { id: string; store: string | null; amount: number | null; code: string | null; pin: string | null; expires: string | null; dateReceived: string | null; status: "available" | "likely_used"; evidenceId: string | null; balanceEstimate: number | null; balanceAsOf: string | null; balanceEvidenceId: string | null; redeemUrl: string | null; sig: CardSig | null };
-      const found: Found[] = (data.cards as Raw[]).map((c) => ({
+      const found: Found[] = (data.cards as Raw[]).map((c) => withCodeFromLink({
           id: c.id,
           store: c.store ?? "Gift card",
           amount: c.amount ?? 0,
@@ -3292,6 +3294,7 @@ function CardRow({
   // If it can't resolve (unsupported merchant / failed), the card just keeps its estimate, no
   // button, no error: the headline number is the answer.
   const unlocking = resolve === "unlocking" && !card.code;
+  const cardLink = card.code ? null : safeLink(card.redeemUrl);
 
   const useIt = async () => {
     if (card.code) {
@@ -3399,6 +3402,21 @@ function CardRow({
               <a href={gmailUrl(card.id)} target="_blank" rel="noopener noreferrer" className="flex shrink-0 items-center rounded-xl bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600">Email ↗</a>
             </div>
           )
+        ) : cardLink ? (
+          // The code is hidden behind the email's "view your gift card" link: go straight to the
+          // store's page for this exact card, which shows the code and PIN.
+          <div className="flex items-stretch gap-2">
+            <a
+              href={cardLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex min-w-0 flex-1 flex-col justify-center rounded-xl bg-emerald-50 px-3 py-2 text-left ring-1 ring-emerald-200 transition hover:bg-emerald-100"
+            >
+              <span className="text-sm font-semibold text-emerald-700">🎁 Open your gift card ↗</span>
+              <span className="truncate text-[11px] text-emerald-700/70">code &amp; PIN on {linkDomain(cardLink)}</span>
+            </a>
+            <a href={gmailUrl(card.id)} target="_blank" rel="noopener noreferrer" className="flex shrink-0 items-center rounded-xl bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600">Email ↗</a>
+          </div>
         ) : (
           <div className="flex justify-end">
             <a href={gmailUrl(card.id)} target="_blank" rel="noopener noreferrer" className="flex shrink-0 items-center rounded-xl bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600">Email ↗</a>
