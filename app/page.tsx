@@ -2842,7 +2842,8 @@ function PlasticScanner({
                     type="date"
                     value={expires}
                     onChange={(e) => setExpires(e.target.value)}
-                    className={inputCls}
+                    // iPhones draw date boxes wider than the screen unless the native look is turned off.
+                    className={`${inputCls} block min-w-0 appearance-none text-left`}
                   />
                 </label>
                 {/* Phone app: the barcode only holds the number. The PIN (and usually the store, in the fine
